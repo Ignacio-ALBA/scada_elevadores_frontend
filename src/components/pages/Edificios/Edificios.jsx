@@ -301,8 +301,8 @@ const Edificios = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">Seleccionar empresa</option>
-                    {empresas.map((emp) => (
-                      <option key={emp.id_empresa || emp.id} value={emp.id_empresa || emp.id}>
+                    {empresas.map((emp, idx) => (
+                      <option key={`empresa-${emp.id_empresa || emp.id || idx}`} value={emp.id_empresa || emp.id}>
                         {emp.nombre}
                       </option>
                     ))}

@@ -365,8 +365,8 @@ const Elevadores = () => {
             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
           >
             <option value="todos">Todos los edificios</option>
-            {edificios.map((ed) => (
-              <option key={ed.id_edificio || ed.id} value={ed.id_edificio || ed.id}>
+            {edificios.map((ed, idx) => (
+              <option key={`edificio-${ed.id_edificio || ed.id || idx}`} value={ed.id_edificio || ed.id}>
                 {ed.nombre}
               </option>
             ))}
@@ -543,8 +543,8 @@ const Elevadores = () => {
                     className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
                   >
                     <option value="">Seleccionar edificio</option>
-                    {edificios.map((ed) => (
-                      <option key={ed.id_edificio || ed.id} value={ed.id_edificio || ed.id}>
+                    {edificios.map((ed, idx) => (
+                      <option key={`edificio-form-${ed.id_edificio || ed.id || idx}`} value={ed.id_edificio || ed.id}>
                         {ed.nombre}
                       </option>
                     ))}

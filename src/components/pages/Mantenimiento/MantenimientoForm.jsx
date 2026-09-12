@@ -115,8 +115,8 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
           className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value="">Seleccionar elevador</option>
-          {elevadores.map((e) => (
-            <option key={e.id_elevador || e.id} value={e.id_elevador || e.id}>
+          {elevadores.map((e, idx) => (
+            <option key={`elevador-${e.id_elevador || e.id || idx}`} value={e.id_elevador || e.id}>
               {e.codigo} - {e.nombre}
             </option>
           ))}
