@@ -20,18 +20,19 @@ const CatalogoPermisos = ({ canEdit }) => {
     try {
       // Cargar roles
       const rolesResponse = await api.get('/roles/');
-      setRoles(rolesResponse.data);
+      setRoles(rolesResponse.data?.data?.data || []);
       
       // Cargar todos los permisos
       const permisosResponse = await api.get('/permisos/');
-      setData(permisosResponse.data);
+      setData(permisosResponse.data?.data?.data || []);
 
       // console.log('🔍 Permisos response:', permisosResponse.data);
       // console.log('🔍 Roles response:', rolesResponse.data);
       
       // Seleccionar el primer rol por defecto
-      if (rolesResponse.data.length > 0 && !selectedRol) {
-        setSelectedRol(rolesResponse.data[0].id_rol);
+      const rolesData = rolesResponse.data?.data?.data || [];
+      if (rolesData.length > 0 && !selectedRol) {
+        setSelectedRol(rolesData[0].idRol);
       }
     } catch (error) {
       console.error('Error cargando datos:', error);
@@ -49,28 +50,24 @@ const CatalogoPermisos = ({ canEdit }) => {
     if (!canEdit) return;
     
     // Encontrar el permiso actual
-    const permiso = data.find(p => p.id_rol === rolId && p.id_modulo === moduloId);
+    const permiso = data.find(p => p.idRol === rolId && p.idModulo === moduloId);
     if (!permiso) return;
     
     const nuevoValor = !permiso[campo];
     
     try {
       setSaving(true);
-      await api.patch(`/permisos/${permiso.id}`, {
-        [campo]: nuevoValor
-      });
+      // El backend espera parámetros query para el PATCH
+      const queryParam = `${campo.charAt(0).toLowerCase() + campo.slice(1)}=${nuevoValor}`;
+      await api.patch(`/permisos/${permiso.id}?${queryParam}`);
       
       // Actualizar localmente
       setData(data.map(p => 
-        p.id_rol === rolId && p.id_modulo === moduloId 
+        p.idRol === rolId && p.idModulo === moduloId 
           ? { ...p, [campo]: nuevoValor }
           : p
       ));
 
-      // console.log('🔍 Enviando PATCH a /permisos/${permiso.id}', {
-      //     [campo]: nuevoValor
-      // });
-      
       setMessage({ type: 'success', text: 'Permiso actualizado correctamente' });
     } catch (error) {
       console.error('Error actualizando permiso:', error);
@@ -82,10 +79,10 @@ const CatalogoPermisos = ({ canEdit }) => {
   };
 
   // Filtrar permisos por rol seleccionado
-  const permisosPorRol = data.filter(p => p.id_rol === selectedRol);
+  const permisosPorRol = data.filter(p => p.idRol === selectedRol);
   
   // Obtener el nombre del rol seleccionado
-  const rolSeleccionado = roles.find(r => r.id_rol === selectedRol);
+  const rolSeleccionado = roles.find(r => r.idRol === selectedRol);
 
   if (loading) {
     return (
@@ -115,8 +112,8 @@ const CatalogoPermisos = ({ canEdit }) => {
               className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm min-w-[200px]"
             >
               {roles.map((rol) => (
-                <option key={rol.id_rol} value={rol.id_rol}>
-                  {rol.nombre} {rol.estado !== 'activo' ? `(${rol.estado})` : ''}
+                <option key={rol.idRol} value={rol.idRol}>
+                  {rol.nombre} {!rol.activo ? `(inactivo)` : ''}
                 </option>
               ))}
             </select>
@@ -159,58 +156,58 @@ const CatalogoPermisos = ({ canEdit }) => {
                 permisosPorRol.map((permiso) => (
                   <tr key={permiso.id} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-sm font-medium text-text-secondary">
-                      {permiso.modulo_nombre || permiso.modulo}
+                      {permiso.nombreModulo || permiso.modulo}
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => handleTogglePermiso(permiso.id_rol, permiso.id_modulo, 'puede_ver')}
+                        onClick={() => handleTogglePermiso(permiso.idRol, permiso.idModulo, 'puedeVer')}
                         disabled={!canEdit || saving}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                          permiso.puede_ver
+                          permiso.puedeVer
                             ? 'bg-green-100 text-green-700 hover:bg-green-200'
                             : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                         } ${!canEdit ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                       >
-                        {permiso.puede_ver ? '✅' : '❌'}
+                        {permiso.puedeVer ? '✅' : '❌'}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => handleTogglePermiso(permiso.id_rol, permiso.id_modulo, 'puede_crear')}
+                        onClick={() => handleTogglePermiso(permiso.idRol, permiso.idModulo, 'puedeCrear')}
                         disabled={!canEdit || saving}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                          permiso.puede_crear
+                          permiso.puedeCrear
                             ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                             : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                         } ${!canEdit ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                       >
-                        {permiso.puede_crear ? '✅' : '❌'}
+                        {permiso.puedeCrear ? '✅' : '❌'}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => handleTogglePermiso(permiso.id_rol, permiso.id_modulo, 'puede_editar')}
+                        onClick={() => handleTogglePermiso(permiso.idRol, permiso.idModulo, 'puedeEditar')}
                         disabled={!canEdit || saving}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                          permiso.puede_editar
+                          permiso.puedeEditar
                             ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
                             : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                         } ${!canEdit ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                       >
-                        {permiso.puede_editar ? '✅' : '❌'}
+                        {permiso.puedeEditar ? '✅' : '❌'}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-center">
                       <button
-                        onClick={() => handleTogglePermiso(permiso.id_rol, permiso.id_modulo, 'puede_eliminar')}
+                        onClick={() => handleTogglePermiso(permiso.idRol, permiso.idModulo, 'puedeEliminar')}
                         disabled={!canEdit || saving}
                         className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                          permiso.puede_eliminar
+                          permiso.puedeEliminar
                             ? 'bg-red-100 text-red-700 hover:bg-red-200'
                             : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                         } ${!canEdit ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                       >
-                        {permiso.puede_eliminar ? '✅' : '❌'}
+                        {permiso.puedeEliminar ? '✅' : '❌'}
                       </button>
                     </td>
                   </tr>

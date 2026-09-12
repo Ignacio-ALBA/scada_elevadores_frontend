@@ -1,5 +1,5 @@
 // frontend/src/components/pages/Roles/Roles.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import RolesTable from './RolesTable';
 import RolesForm from './RolesForm';
 import RolesFilters from './RolesFilters';
@@ -18,9 +18,11 @@ const Roles = () => {
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [editingRol, setEditingRol] = useState(null);
+  
+  // Separar estado de control de resultado para evitar loops
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [paginationInfo, setPaginationInfo] = useState({
-    pageNumber: 1,
-    pageSize: 10,
     totalCount: 0,
     totalPages: 0
   });
@@ -30,34 +32,43 @@ const Roles = () => {
   });
   const pageTitle = useNombreInterfaz('roles');
 
-  // Cargar roles desde el backend
-  useEffect(() => {
-    loadRoles();
-  }, [paginationInfo.pageNumber, paginationInfo.pageSize]);
-
-  const loadRoles = async () => {
+  // Memorizar la función loadRoles para evitar infinite loops
+  const loadRoles = useCallback(async (page, size, activo) => {
     try {
       setLoading(true);
+      console.log('📥 Cargando roles:', { page, limit: size, activo });
+      
       const response = await rolService.getAll({
-        page: paginationInfo.pageNumber,
-        limit: paginationInfo.pageSize,
-        activo: filters.activo
+        page,
+        limit: size,
+        activo: activo
       });
 
+      console.log('✅ Respuesta roles completa:', response);
+      console.log('✅ Roles mapeados:', response.data);
+      
       setRoles(response.data || []);
+      // Solo actualizar totalCount y totalPages, no currentPage/pageSize (eso ya está en control)
       setPaginationInfo({
-        pageNumber: response.pageNumber,
-        pageSize: response.pageSize,
         totalCount: response.totalCount,
         totalPages: response.totalPages
       });
     } catch (error) {
-      console.error('Error cargando roles:', error);
+      console.error('❌ Error cargando roles:', error);
+      console.error('Error details:', error.response?.data || error.message);
       setRoles([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  // Cargar roles cuando cambien paginación o filtros (sin depender de paginationInfo)
+  useEffect(() => {
+    console.log('🔄 useEffect disparado - cargando roles');
+    loadRoles(currentPage, pageSize, filters.activo);
+  }, [currentPage, pageSize, filters.activo, loadRoles]);
+
+
 
   const handleAdd = () => {
     setEditingRol(null);
@@ -73,7 +84,8 @@ const Roles = () => {
     if (window.confirm('¿Estás seguro de eliminar este rol?')) {
       try {
         await rolService.delete(id);
-        loadRoles();
+        // Resetear a página 1 para recargar la lista
+        setCurrentPage(1);
       } catch (error) {
         console.error('Error eliminando rol:', error);
         alert('Error al eliminar el rol');
@@ -91,7 +103,8 @@ const Roles = () => {
       }
       setShowForm(false);
       setEditingRol(null);
-      loadRoles();
+      // Resetear a página 1 para recargar la lista
+      setCurrentPage(1);
     } catch (error) {
       console.error('Error guardando rol:', error);
       alert('Error al guardar el rol');
@@ -106,16 +119,17 @@ const Roles = () => {
   };
 
   const handlePageChange = (newPage) => {
-    setPaginationInfo({ ...paginationInfo, pageNumber: newPage });
+    setCurrentPage(newPage);
   };
 
   const handlePageSizeChange = (newSize) => {
-    setPaginationInfo({ ...paginationInfo, pageSize: newSize, pageNumber: 1 });
+    setPageSize(newSize);
+    setCurrentPage(1); // Reset a página 1 cuando cambia el tamaño
   };
 
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
-    setPaginationInfo({ ...paginationInfo, pageNumber: 1 });
+    setCurrentPage(1); // Reset a página 1 cuando cambia filtro
   };
 
   const handleResetFilters = () => {
@@ -123,7 +137,7 @@ const Roles = () => {
       search: '',
       activo: undefined
     });
-    setPaginationInfo({ ...paginationInfo, pageNumber: 1 });
+    setCurrentPage(1);
   };
 
   return (
@@ -162,26 +176,26 @@ const Roles = () => {
         </div>
         <div className="flex gap-2">
           <button
-            onClick={() => handlePageChange(paginationInfo.pageNumber - 1)}
-            disabled={paginationInfo.pageNumber <= 1}
+            onClick={() => handlePageChange(currentPage - 1)}
+            disabled={currentPage <= 1}
             className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Anterior
           </button>
           <div className="flex items-center gap-2">
             <span className="text-sm">
-              Página {paginationInfo.pageNumber} de {paginationInfo.totalPages}
+              Página {currentPage} de {paginationInfo.totalPages}
             </span>
           </div>
           <button
-            onClick={() => handlePageChange(paginationInfo.pageNumber + 1)}
-            disabled={paginationInfo.pageNumber >= paginationInfo.totalPages}
+            onClick={() => handlePageChange(currentPage + 1)}
+            disabled={currentPage >= paginationInfo.totalPages}
             className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
           >
             Siguiente
           </button>
           <select
-            value={paginationInfo.pageSize}
+            value={pageSize}
             onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
             className="px-2 py-2 border border-gray-300 rounded-lg text-sm"
           >

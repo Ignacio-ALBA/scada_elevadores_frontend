@@ -9,7 +9,11 @@ export const logsService = {
       const queryParams = new URLSearchParams();
       
       if (params.page) queryParams.append('page', params.page);
+      else queryParams.append('page', 1);
+      
       if (params.limit) queryParams.append('limit', params.limit);
+      else queryParams.append('limit', 10);
+      
       if (params.tipo && params.tipo !== 'todos') queryParams.append('tipo', params.tipo);
       if (params.fecha_desde) queryParams.append('fecha_desde', params.fecha_desde);
       if (params.fecha_hasta) queryParams.append('fecha_hasta', params.fecha_hasta);
@@ -17,7 +21,18 @@ export const logsService = {
 
       const url = `${API_URL}/logs?${queryParams.toString()}`;
       const response = await api.get(url);
-      return response.data;
+      
+      // Patrón: response.data = { success, data: { data: [...], totalCount, ... } }
+      if (response.data?.data?.data && Array.isArray(response.data.data.data)) {
+        return response.data.data.data;
+      }
+      
+      // Fallback: si response.data es un array (compatibilidad)
+      if (Array.isArray(response.data)) {
+        return response.data;
+      }
+      
+      return [];
     } catch (error) {
       console.error('Error en getLogs:', error);
       throw error;

@@ -43,17 +43,20 @@ export const rolService = {
             if (response.data?.data) {
                 const paginatedData = response.data.data;
                 
+                // paginatedData es un objeto con estructura: { data: [...roles], totalCount, pageNumber, etc }
+                const rolesArray = paginatedData.data || [];
+                
                 // Mapear cada rol
-                const mapped = paginatedData.map ? paginatedData.map(r => mapCamelToSnake(r)) : [];
+                const mapped = rolesArray.map(r => mapCamelToSnake(r));
                 console.log('✨ Roles mapeados:', mapped);
                 
                 // Retornar con info de paginación
                 return {
                     data: mapped,
-                    totalCount: response.data.totalCount || mapped.length,
-                    pageNumber: response.data.pageNumber || 1,
-                    pageSize: response.data.pageSize || params.limit || 10,
-                    totalPages: response.data.totalPages || 1
+                    totalCount: paginatedData.totalCount || 0,
+                    pageNumber: paginatedData.pageNumber || 1,
+                    pageSize: paginatedData.pageSize || params.limit || 10,
+                    totalPages: paginatedData.totalPages || 1
                 };
             }
             console.warn('⚠️ No se encontraron datos en response.data.data', response.data);

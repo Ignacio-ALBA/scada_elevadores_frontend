@@ -364,9 +364,9 @@ const Sidebar = ({ isOpen, onToggle }) => {
       try {
         const data = await interfaceVisualService.getAll({ activo: true });
         const items = data.map(iface => ({
-          clave: `interface_${iface.id_interface}`,
+          clave: `interface_${iface.idInterface}`,
           nombre: iface.titulo || iface.nombre,
-          ruta: `/interfaces/${iface.id_interface}`,
+          ruta: `/interfaces/${iface.idInterface}`,
           icono: IconEye,
           es_dinamica: true,
         }));

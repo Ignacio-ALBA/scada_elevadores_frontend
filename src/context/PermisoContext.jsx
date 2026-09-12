@@ -141,8 +141,26 @@ export const PermisoProvider = ({ children }) => {
             // console.log('🔍 PermisoContext - Módulos disponibles en BD:', Object.keys(response.data.modulos || {}));
             
             // Si la BD devuelve permisos, usarlos
-            if (response.data && response.data.modulos) {
-              setPermisos(response.data);
+            // Obtener los datos - pueden venir como: response.data.data.data (array paginado), response.data.data (objeto con modulos), o response.data (objeto)
+            const permisosData = response.data?.modulos ? response.data : (response.data?.data?.data || response.data?.data || response.data);
+            if (permisosData && (permisosData.modulos || Array.isArray(permisosData))) {
+              // Si es un array, convertir a estructura con módulos
+              if (Array.isArray(permisosData)) {
+                const modulos = {};
+                permisosData.forEach(permiso => {
+                  if (permiso.modulo_clave) {
+                    modulos[permiso.modulo_clave] = {
+                      ver: permiso.puede_ver,
+                      crear: permiso.puede_crear,
+                      editar: permiso.puede_editar,
+                      eliminar: permiso.puede_eliminar
+                    };
+                  }
+                });
+                setPermisos({ modulos });
+              } else {
+                setPermisos(permisosData);
+              }
             } else {
               // Fallback a permisos locales
               // console.warn('⚠️ PermisoContext - Usando permisos locales (fallback)');

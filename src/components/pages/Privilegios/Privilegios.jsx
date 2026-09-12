@@ -62,10 +62,10 @@ const Privilegios = () => {
       // console.log('🔍 Respuesta de roles:', response.data);
       
       // Verificar que los datos existen
-      if (response.data && response.data.length > 0) {
+      if (response.data?.data?.data && response.data.data.data.length > 0) {
         // Mapear para asegurar que tienen el campo 'id'
-        const rolesData = response.data.map(rol => ({
-          id: rol.id_rol || rol.id,  // Intentar con id_rol primero
+        const rolesData = response.data.data.data.data.map(rol => ({
+          id: rol.idRol || rol.id,  // Intentar con idRol primero
           nombre: rol.nombre,
           nivel: rol.nivel_jerarquia || rol.nivel
         }));
@@ -116,7 +116,8 @@ const Privilegios = () => {
       
       // const modulos = response.data.modulos || {};
       const modulos = {};
-      response.data.forEach(permiso => {
+      const permisosData = response.data?.data?.data || response.data?.data || response.data || [];
+      (Array.isArray(permisosData) ? permisosData : []).forEach(permiso => {
         if (permiso.modulo_clave) {
           modulos[permiso.modulo_clave] = {
             ver: permiso.puede_ver,
