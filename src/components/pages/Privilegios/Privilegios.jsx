@@ -64,10 +64,10 @@ const Privilegios = () => {
       // Verificar que los datos existen
       if (response.data?.data?.data && response.data.data.data.length > 0) {
         // Mapear para asegurar que tienen el campo 'id'
-        const rolesData = response.data.data.data.data.map(rol => ({
+        const rolesData = response.data.data.data.map(rol => ({
           id: rol.idRol || rol.id,  // Intentar con idRol primero
           nombre: rol.nombre,
-          nivel: rol.nivel_jerarquia || rol.nivel
+          nivel: rol.nivelJerarquia || rol.nivel_jerarquia || rol.nivel
         }));
         // console.log('🔍 Roles mapeados:', rolesData);
         setRoles(rolesData);
