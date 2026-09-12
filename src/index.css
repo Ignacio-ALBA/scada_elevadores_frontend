@@ -1,0 +1,307 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  background-color: #f4f7fc;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* frontend/src/index.css */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* Efecto de brillo en el botón */
+.btn-glow {
+  position: relative;
+  overflow: hidden;
+}
+
+.btn-glow::after {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: linear-gradient(
+    45deg,
+    transparent 40%,
+    rgba(255, 255, 255, 0.1) 50%,
+    transparent 60%
+  );
+  animation: shimmer 3s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%) rotate(45deg);
+  }
+  100% {
+    transform: translateX(100%) rotate(45deg);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* frontend/src/index.css */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeInUp {
+  animation: fadeInUp 0.5s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.header-transition {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.header-collapsed {
+  max-height: 40px;
+  opacity: 1;
+}
+
+.header-expanded {
+  max-height: 200px;
+  opacity: 1;
+}
+
+/* frontend/src/index.css - Agregar al final */
+
+/* Animación suave para el topbar */
+.topbar-transition {
+  transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Efecto de brillo en el topbar minimizado */
+.topbar-minimized {
+  box-shadow: 0 0 30px rgba(34, 211, 238, 0.05), 0 0 60px rgba(34, 211, 238, 0.02);
+}
+
+/* Hover efecto en el topbar minimizado */
+.topbar-minimized:hover {
+  box-shadow: 0 0 40px rgba(34, 211, 238, 0.1), 0 0 80px rgba(34, 211, 238, 0.05);
+  border-color: rgba(34, 211, 238, 0.2);
+}
+
+/* frontend/src/index.css - Agregar al final */
+
+/* ============================================
+   ESTILOS BASE PARA INTERFACES
+   ============================================ */
+
+/* Fondo y texto por defecto (claro) */
+.app-default {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+/* Fondo y texto para modo oscuro */
+.app-dark {
+  background-color: #0f172a;
+  color: #f1f5f9;
+}
+
+/* ============================================
+   TARJETAS Y CONTENEDORES
+   ============================================ */
+
+/* Tarjeta en modo claro */
+.card-light {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  color: #0f172a;
+}
+
+/* Tarjeta en modo oscuro */
+.card-dark {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  color: #f1f5f9;
+}
+
+/* ============================================
+   TABLAS
+   ============================================ */
+
+/* Tabla en modo claro */
+.table-light {
+  background-color: #ffffff;
+  border-color: #e2e8f0;
+}
+.table-light thead {
+  background-color: #f8fafc;
+}
+.table-light td {
+  border-color: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Tabla en modo oscuro */
+.table-dark {
+  background-color: #1e293b;
+  border-color: #334155;
+}
+.table-dark thead {
+  background-color: #0f172a;
+}
+.table-dark td {
+  border-color: #334155;
+  color: #f1f5f9;
+}
+.table-dark th {
+  color: #94a3b8;
+}
+.table-dark td.text-text-secondary {
+  color: #cbd5e1;
+}
+
+/* ============================================
+   INPUTS Y FORMULARIOS
+   ============================================ */
+
+/* Input en modo claro */
+.input-light {
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #0f172a;
+}
+.input-light:focus {
+  border-color: #3b82f6;
+  ring: 2px solid #3b82f6;
+}
+
+/* Input en modo oscuro */
+.input-dark {
+  background-color: #1e293b;
+  border: 1px solid #475569;
+  color: #f1f5f9;
+}
+.input-dark:focus {
+  border-color: #06b6d4;
+  ring: 2px solid #06b6d4;
+}
+.input-dark::placeholder {
+  color: #94a3b8;
+}
+
+/* ============================================
+   SELECTORES
+   ============================================ */
+
+.select-light {
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #0f172a;
+}
+
+.select-dark {
+  background-color: #1e293b;
+  border: 1px solid #475569;
+  color: #f1f5f9;
+}
+.select-dark option {
+  background-color: #1e293b;
+  color: #f1f5f9;
+}
+
+/* ============================================
+   BOTONES Y ACCIONES
+   ============================================ */
+
+.btn-light {
+  background-color: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+}
+.btn-light:hover {
+  background-color: #e2e8f0;
+}
+
+.btn-dark {
+  background-color: #334155;
+  color: #f1f5f9;
+  border: 1px solid #475569;
+}
+.btn-dark:hover {
+  background-color: #475569;
+}
+
+/* ============================================
+   TEXTOS Y TÍTULOS
+   ============================================ */
+
+.text-light {
+  color: #0f172a;
+}
+.text-light-secondary {
+  color: #475569;
+}
+.text-light-muted {
+  color: #94a3b8;
+}
+
+.text-dark {
+  color: #f1f5f9;
+}
+.text-dark-secondary {
+  color: #94a3b8;
+}
+.text-dark-muted {
+  color: #64748b;
+}

@@ -1,0 +1,120 @@
+<!-- frontend/index.html -->
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SmartLift - SCADA Elevadores</title>
+    
+    <!-- ⚡ SOLUCIÓN DEFINITIVA: Silenciar TODOS los errores de extensiones -->
+    <script>
+      (function() {
+        // Detectar si estamos en desarrollo
+        const isDev = window.location.hostname === 'localhost' || 
+                     window.location.hostname === '127.0.0.1';
+        
+        // Si no estamos en desarrollo, no hacer nada (en producción no ocurre este error)
+        if (!isDev) return;
+        
+        // Mensajes a silenciar (errores de extensiones)
+        const FILTER = [
+          'listener indicated an asynchronous response',
+          'message channel closed before a response was received',
+          'Extension context invalidated',
+          'Could not establish connection',
+          'Receiving end does not exist',
+          'React DevTools',
+          'Download the React DevTools'
+        ];
+        
+        const shouldFilter = (msg) => {
+          if (!msg) return false;
+          const msgStr = msg.toString();
+          return FILTER.some(f => msgStr.includes(f));
+        };
+        
+        // 1. Capturar TODOS los errores de ventana (global)
+        const originalOnError = window.onerror;
+        window.onerror = function(msg, source, line, col, error) {
+          if (shouldFilter(msg)) {
+            console.log('🔇 Error de extensión silenciado:', msg);
+            return true; // Suprime el error
+          }
+          if (originalOnError) {
+            return originalOnError(msg, source, line, col, error);
+          }
+          return false;
+        };
+        
+        // 2. Capturar TODAS las promesas rechazadas (global)
+        window.addEventListener('unhandledrejection', function(e) {
+          const msg = e.reason?.message || e.reason || '';
+          if (shouldFilter(msg)) {
+            console.log('🔇 Promesa rechazada por extensión silenciada:', msg);
+            e.preventDefault();
+            e.stopPropagation();
+            return true;
+          }
+        }, true);
+        
+        // 3. Silenciar TODOS los console.error (global)
+        const origError = console.error;
+        console.error = function() {
+          const args = Array.from(arguments);
+          const msg = args[0]?.toString() || '';
+          if (shouldFilter(msg)) {
+            // Silenciar silenciosamente
+            return;
+          }
+          origError.apply(console, args);
+        };
+        
+        // 4. Silenciar TODOS los console.warn (global)
+        const origWarn = console.warn;
+        console.warn = function() {
+          const args = Array.from(arguments);
+          const msg = args[0]?.toString() || '';
+          if (shouldFilter(msg)) {
+            // Silenciar silenciosamente
+            return;
+          }
+          origWarn.apply(console, args);
+        };
+        
+        // 5. También silenciar errores en el objeto window (fallback)
+        window.addEventListener('error', function(e) {
+          const msg = e.message || '';
+          if (shouldFilter(msg)) {
+            console.log('🔇 Error de ventana silenciado:', msg);
+            e.preventDefault();
+            e.stopPropagation();
+            return true;
+          }
+        }, true);
+        
+        console.log('✅ Filtro de errores de extensiones activado (TODAS las páginas)');
+      })();
+    </script>
+    <script>
+      // Función para actualizar el título de la página
+      function updateTitle(title) {
+        document.title = title || 'SmartLift - SCADA Elevadores';
+      }
+      
+      // Escuchar mensajes del frontend para actualizar el título
+      window.addEventListener('message', function(event) {
+        if (event.data && event.data.type === 'updateTitle') {
+          updateTitle(event.data.title);
+        }
+      });
+      
+      // También exponer la función globalmente
+      window.updatePageTitle = updateTitle;
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

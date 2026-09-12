@@ -1,0 +1,46 @@
+Sigue sin salir Edificios ni Cabinas en el Sidebar. Todavia no le pregunto a deepseek
+
+
+# Correr el interprete correcto
+(Set-ExecutionPolicy -Scope Process -ExecutionPolicy RemoteSigned) ; (& c:\proyectos\elevadores\venv\Scripts\Activate.ps1)
+
+Ve a http://localhost:5173/login
+    Usa las credenciales:
+    Usuario: superadmin
+    Contraseña: SuperAdmin123
+
+(venv) PS C:\proyectos\elevadores\backend> uvicorn app.main:app --reload
+(venv) PS C:\proyectos\elevadores\frontend> npm run dev
+(venv) PS C:\proyectos\elevadores\emulador> python .\main.py
+
+BACKEND:
+
+(venv) PS C:\proyectos\elevadores\backend> uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+
+FRONTEND
+
+(venv) PS C:\proyectos\elevadores\frontend> npm run dev
+
+
+Respaldar BDD Estructura + Datos 
+PS C:\Program Files\PostgreSQL\18\bin> .\pg_dump.exe -U postgres -h localhost -p 5432 -F p -b -v -f "C:\proyectos\elevadores\backups\scada_elevadores_pre_reset.sql" scada_elevadores
+
+
+Respaldar BDD Solo Estructura
+PS C:\Program Files\PostgreSQL\18\bin> .\pg_dump.exe -U postgres -d scada_elevadores --schema-only >
+"C:\proyectos\elevadores\backups\scada_elevadores_26072026_estructura.sql"
+
+
+Respaldar BDD Estructura + Datos
+PS C:\Program Files\PostgreSQL\18\bin> .\pg_dump.exe -U postgres -d scada_elevadores >
+"C:\proyectos\elevadores\backups\scada_elevadores_26072026_estructura_y_datos.sql" scada_elevadores
+
+
+Respaldar BDD Solo Datos
+PS C:\Program Files\PostgreSQL\18\bin> .\pg_dump.exe -U postgres -d scada_elevadores --data-only >
+"C:\proyectos\elevadores\backups\scada_elevadores_26072026_datos.sql"
+
+
+
+admin123
