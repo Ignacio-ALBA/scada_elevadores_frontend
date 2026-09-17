@@ -155,16 +155,16 @@ const ParametrosCabina = () => {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const [elevadoresData, cabinasData, parametrosData, variablesData] = await Promise.all([
+      const [elevadoresResult, cabinasResult, parametrosResult, variablesResult] = await Promise.all([
         elevadorService.getAll({ activo: true }),
         cabinaService.getAll({ activo: true }),
         parametroCabinaService.getAll({ activo: true }),
         variableScadaService.getAll({ activo: true })
       ]);
-      setElevadores(elevadoresData);
-      setCabinas(cabinasData);
-      setParametros(parametrosData);
-      setVariablesScada(variablesData);
+      setElevadores(elevadoresResult.data);
+      setCabinas(cabinasResult.data);
+      setParametros(parametrosResult.data);
+      setVariablesScada(variablesResult.data);
     } catch (error) {
       console.error('Error cargando datos:', error);
       setMessage({ type: 'error', text: 'Error al cargar los datos' });

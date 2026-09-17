@@ -50,8 +50,8 @@ const Alarmas = () => {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const alarmasData = await alarmasService.getAll({ resuelta: false });
-      const alarmasList = Array.isArray(alarmasData) ? alarmasData : [];
+      const result = await alarmasService.getAll({ resuelta: false });
+      const alarmasList = Array.isArray(result.data) ? result.data : [];
       
       let filtered = alarmasList;
       

@@ -9,7 +9,14 @@ export const variableScadaService = {
         if (params.limit) queryParams.append('limit', params.limit);
         
         const response = await api.get(`/variables-scada/?${queryParams.toString()}`);
-        return response.data;
+        const paginated = response.data?.data;
+        return {
+            data: paginated?.data || [],
+            totalCount: paginated?.totalCount || 0,
+            pageNumber: paginated?.pageNumber || 1,
+            pageSize: paginated?.pageSize || 10,
+            totalPages: paginated?.totalPages || 0
+        };
     },
 
     // Obtener una variable por ID

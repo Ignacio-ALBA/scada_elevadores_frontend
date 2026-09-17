@@ -5,7 +5,14 @@ export const vistasConfiguracionService = {
     // Obtener todas las vistas
     getAll: async (params = {}) => {
         const response = await api.get('/vistas-configuracion/', { params });
-        return response.data;
+        const paginated = response.data?.data;
+        return {
+            data: paginated?.data || [],
+            totalCount: paginated?.totalCount || 0,
+            pageNumber: paginated?.pageNumber || 1,
+            pageSize: paginated?.pageSize || 10,
+            totalPages: paginated?.totalPages || 0
+        };
     },
 
     // Obtener vistas activas

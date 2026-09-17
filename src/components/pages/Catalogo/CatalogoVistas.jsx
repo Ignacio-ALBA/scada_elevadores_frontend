@@ -146,8 +146,8 @@ const CatalogoVistas = () => {
   const cargarVistas = async () => {
     setLoading(true);
     try {
-      const data = await vistasConfiguracionService.getAll();
-      setVistas(data);
+      const result = await vistasConfiguracionService.getAll();
+      setVistas(result.data);
     } catch (error) {
       console.error('Error cargando vistas:', error);
       setMessage({ type: 'error', text: 'Error al cargar las vistas' });

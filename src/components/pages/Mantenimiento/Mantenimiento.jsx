@@ -93,7 +93,7 @@ const Mantenimiento = () => {
       
       const response = await mantenimientoService.getAll(params);
       setMantenimientos(response.data || []);
-      setTotalRegistros(response.total || 0);
+      setTotalRegistros(response.totalCount || 0);
     } catch (error) {
       console.error('Error cargando mantenimientos:', error);
       setMessage({ type: 'error', text: 'Error al cargar los mantenimientos' });

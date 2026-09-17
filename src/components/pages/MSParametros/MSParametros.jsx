@@ -102,8 +102,8 @@ const MSParametros = () => {
 
   const cargarVariablesScada = async () => {
     try {
-      const data = await variableScadaService.getAll({ activo: true, limit: 500 });
-      setVariablesScada(data);
+      const result = await variableScadaService.getAll({ activo: true, limit: 500 });
+      setVariablesScada(result.data);
     } catch (error) {
       console.error('Error cargando variables SCADA:', error);
     }

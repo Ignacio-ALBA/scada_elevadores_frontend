@@ -9,7 +9,14 @@ export const parametroCabinaService = {
         if (params.limit) queryParams.append('limit', params.limit);
         
         const response = await api.get(`/parametros-cabina/?${queryParams.toString()}`);
-        return response.data;
+        const paginated = response.data?.data;
+        return {
+            data: paginated?.data || [],
+            totalCount: paginated?.totalCount || 0,
+            pageNumber: paginated?.pageNumber || 1,
+            pageSize: paginated?.pageSize || 10,
+            totalPages: paginated?.totalPages || 0
+        };
     },
 
     getById: async (id) => {
@@ -48,8 +55,8 @@ export const parametroCabinaService = {
             const cabinasIds = config.cabinas.map(c => c.id_cabina);
             
             // Obtener TODOS los parámetros y filtrar
-            const allParams = await parametroCabinaService.getAll({ activo: true });
-            const filtered = allParams.filter(p => cabinasIds.includes(p.id_cabina));
+            const result = await parametroCabinaService.getAll({ activo: true });
+            const filtered = result.data.filter(p => cabinasIds.includes(p.id_cabina));
             
             return filtered;
         } catch (error) {

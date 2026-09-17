@@ -42,12 +42,12 @@ const Cabinas = () => {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const [cabinasData, elevadoresData] = await Promise.all([
+      const [cabinasResult, elevadoresResult] = await Promise.all([
         cabinaService.getAll({ activo: true }),
         elevadorService.getAll({ activo: true })
       ]);
-      setCabinas(cabinasData);
-      setElevadores(elevadoresData);
+      setCabinas(cabinasResult.data);
+      setElevadores(elevadoresResult.data);
     } catch (error) {
       console.error('Error cargando datos:', error);
       setMessage({ type: 'error', text: 'Error al cargar los datos' });

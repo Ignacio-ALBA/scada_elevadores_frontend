@@ -47,8 +47,8 @@ const Edificios = () => {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const data = await edificioService.getAll({ activo: true });
-      setEdificios(data);
+      const result = await edificioService.getAll({ activo: true });
+      setEdificios(result.data);
     } catch (error) {
       console.error('Error cargando edificios:', error);
       setMessage({ type: 'error', text: 'Error al cargar los edificios' });
@@ -59,8 +59,8 @@ const Edificios = () => {
 
   const cargarEmpresas = async () => {
     try {
-      const data = await empresaService.getAll({ activo: true });
-      setEmpresas(data);
+      const result = await empresaService.getAll({ activo: true });
+      setEmpresas(result.data);
     } catch (error) {
       console.error('Error cargando empresas:', error);
       setMessage({ type: 'error', text: 'Error al cargar las empresas' });

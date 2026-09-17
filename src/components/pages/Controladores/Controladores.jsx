@@ -16,8 +16,8 @@ const Controladores = () => {
   const cargarControladores = async () => {
     try {
       setLoading(true);
-      const data = await controladorService.getAll();
-      setControladores(data);
+      const result = await controladorService.getAll();
+      setControladores(result.data);
       setError(null);
     } catch (err) {
       console.error('Error cargando controladores:', err);

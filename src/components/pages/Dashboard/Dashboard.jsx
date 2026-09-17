@@ -241,7 +241,8 @@ const Dashboard = () => {
       setLoading(prev => ({ ...prev, alarmas: true }));
     }
     try {
-      const data = await alarmasService.getAll({ resuelta: false, limit: 100 });
+      const result = await alarmasService.getAll({ resuelta: false, limit: 100 });
+      const data = result.data || [];
       const porPrioridad = {};
       data.forEach(a => {
         const prioridad = a.prioridad || 'media';
@@ -268,7 +269,8 @@ const Dashboard = () => {
       setLoading(prev => ({ ...prev, eventos: true }));
     }
     try {
-      const data = await eventosService.getAll({ limit: 50 });
+      const result = await eventosService.getAll({ limit: 50 });
+      const data = result.data || [];
       updateStats({
         eventos: {
           total: data.length,
@@ -337,14 +339,16 @@ const Dashboard = () => {
       const dias = periodo === '7d' ? 7 : periodo === '30d' ? 30 : 90;
       
       // Obtener datos reales de eventos, alarmas y mantenimientos
-      const [eventosData, alarmasData, mantenimientosResponse] = await Promise.all([
+      const [eventosResult, alarmasResult, mantenimientosResult] = await Promise.all([
         eventosService.getAll({ limit: 1000 }),
         alarmasService.getAll({ limit: 1000 }),
         mantenimientoService.getAll({ limit: 1000 })
       ]);
 
       //  Extraer el array de datos de la respuesta
-      const mantenimientosData = mantenimientosResponse.data || [];
+      const eventosData = eventosResult.data || [];
+      const alarmasData = alarmasResult.data || [];
+      const mantenimientosData = mantenimientosResult.data || [];
 
       // Procesar por día
       const diasMap = {};

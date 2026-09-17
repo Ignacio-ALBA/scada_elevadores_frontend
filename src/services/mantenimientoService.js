@@ -5,7 +5,14 @@ export const mantenimientoService = {
     // Obtener todos los mantenimientos
     getAll: async (params = {}) => {
         const response = await api.get('/mantenimiento/', { params });
-        return response.data;
+        const paginated = response.data?.data;
+        return {
+            data: paginated?.data || [],
+            totalCount: paginated?.totalCount || 0,
+            pageNumber: paginated?.pageNumber || 1,
+            pageSize: paginated?.pageSize || 10,
+            totalPages: paginated?.totalPages || 0
+        };
     },
 
     // Obtener mantenimiento por ID

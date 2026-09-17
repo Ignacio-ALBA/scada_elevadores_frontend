@@ -41,8 +41,8 @@ const Empresas = () => {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const data = await empresaService.getAll({ activo: true });
-      setEmpresas(data);
+      const result = await empresaService.getAll({ activo: true });
+      setEmpresas(result.data);
     } catch (error) {
       console.error('Error cargando empresas:', error);
       setMessage({ type: 'error', text: 'Error al cargar las empresas' });

@@ -16,7 +16,14 @@ export const logsService = {
 
       const url = `${API_URL}/logs?${queryParams.toString()}`;
       const response = await api.get(url);
-      return response.data;
+      const paginated = response.data?.data;
+      return {
+          data: paginated?.data || [],
+          totalCount: paginated?.totalCount || 0,
+          pageNumber: paginated?.pageNumber || 1,
+          pageSize: paginated?.pageSize || 10,
+          totalPages: paginated?.totalPages || 0
+      };
     } catch (error) {
       console.error('Error en getLogs:', error);
       throw error;

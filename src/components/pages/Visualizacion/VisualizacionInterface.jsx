@@ -56,8 +56,8 @@ const VisualizacionInterface = () => {
 
   const cargarVariablesScada = async () => {
     try {
-      const data = await variableScadaService.getAll({ activo: true });
-      setVariablesScada(data);
+      const result = await variableScadaService.getAll({ activo: true });
+      setVariablesScada(result.data);
     } catch (err) {
       console.error('Error cargando variables SCADA:', err);
     }

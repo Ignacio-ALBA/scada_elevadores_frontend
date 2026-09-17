@@ -2,9 +2,16 @@ import api from './api';
 
 export const integracionService = {
     // Obtener todas las integraciones
-    getAll: async () => {
+    getAll: async (params = {}) => {
         const response = await api.get('/integraciones/');
-        return response.data;
+        const paginated = response.data?.data;
+        return {
+            data: paginated?.data || [],
+            totalCount: paginated?.totalCount || 0,
+            pageNumber: paginated?.pageNumber || 1,
+            pageSize: paginated?.pageSize || 10,
+            totalPages: paginated?.totalPages || 0
+        };
     },
 
     // Obtener una integración por ID

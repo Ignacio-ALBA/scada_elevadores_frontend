@@ -5,7 +5,14 @@
     // Obtener todos los eventos
     getAll: async (params = {}) => {
         const response = await api.get('/eventos/', { params });
-        return response.data;
+        const paginated = response.data?.data;
+        return {
+            data: paginated?.data || [],
+            totalCount: paginated?.totalCount || 0,
+            pageNumber: paginated?.pageNumber || 1,
+            pageSize: paginated?.pageSize || 10,
+            totalPages: paginated?.totalPages || 0
+        };
     },
 
     //  Obtener eventos con filtros (igual que Reportes)
@@ -15,7 +22,16 @@
         if (fecha_hasta) params.fecha_hasta = fecha_hasta;
         if (tipo && tipo !== 'todos') params.tipo = tipo;
         const response = await api.get('/eventos/filtered', { params });
-        return response.data;
+        const paginated = response.data?.data;
+        return {
+            data: paginated?.data || [],
+            eventos: paginated?.data || [],
+            totalCount: paginated?.totalCount || 0,
+            total: paginated?.totalCount || 0,
+            pageNumber: paginated?.pageNumber || 1,
+            pageSize: paginated?.pageSize || 10,
+            totalPages: paginated?.totalPages || 0
+        };
     },
 
         // Obtener un evento por ID

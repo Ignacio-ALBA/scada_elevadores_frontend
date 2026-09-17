@@ -50,8 +50,8 @@ const CatalogoVariablesScada = ({ canEdit }) => {
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      const data = await variableScadaService.getAll({ activo: true });
-      setVariables(data);
+      const result = await variableScadaService.getAll({ activo: true });
+      setVariables(result.data);
     } catch (error) {
       console.error('Error cargando variables:', error);
       setMessage({ type: 'error', text: 'Error al cargar las variables SCADA' });
