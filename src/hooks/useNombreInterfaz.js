@@ -36,6 +36,12 @@ const DEFAULT_NAMES = {
   'elevadores_graficos': 'Elevadores Gráficos',
   'cabinas_graficos': 'Cabinas Gráficos',
   'logs': 'Log',
+  'perfil': 'Perfil',
+  'notificaciones': 'Notificaciones',
+  'vistas': 'Vistas2',
+  'iconos': 'Íconos',
+  'cambiar_contrasena': 'Cambiar Contraseña',
+  'estilos': 'Estilos',
 };
 
 export const useNombreInterfaz = (clave) => {

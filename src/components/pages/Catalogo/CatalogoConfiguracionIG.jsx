@@ -6,7 +6,6 @@ import CatalogoConfiguracionIGTable from './CatalogoConfiguracionIGTable';
 import CatalogoConfiguracionIGForm from './CatalogoConfiguracionIGForm';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
 
-// SVG Iconos
 const IconPlus = () => (
   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
     <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/>
@@ -14,9 +13,6 @@ const IconPlus = () => (
 );
 
 const CatalogoConfiguracionIG = () => {
-  // ============================================
-  // ESTADOS
-  // ============================================
   const [configuraciones, setConfiguraciones] = useState([]);
   const [totalConfiguraciones, setTotalConfiguraciones] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,11 +24,10 @@ const CatalogoConfiguracionIG = () => {
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
   const pageTitle = useNombreInterfaz('configuracion_ig');
 
-  // ============================================
-  // FUNCIONES DE CARGA DE DATOS
-  // ============================================
-  
-  // Cargar TODAS las configuraciones (excepto eliminadas) para los contadores
+  // ✅ Obtener el tema para estilos dinámicos
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
+
   const cargarTotalConfiguraciones = async () => {
     try {
       const data = await configuracionIGService.getAll({});
@@ -43,7 +38,6 @@ const CatalogoConfiguracionIG = () => {
     }
   };
 
-  // Cargar configuraciones según el filtro actual
   const cargarConfiguraciones = async () => {
     setLoading(true);
     try {
@@ -64,7 +58,6 @@ const CatalogoConfiguracionIG = () => {
     }
   };
 
-  // Cargar elevadores disponibles
   const cargarElevadoresDisponibles = async () => {
     try {
       const data = await configuracionIGService.getElevadoresDisponibles();
@@ -74,7 +67,6 @@ const CatalogoConfiguracionIG = () => {
     }
   };
 
-  // Función para contar por estado (usando el total)
   const contarPorEstado = () => {
     if (!totalConfiguraciones || totalConfiguraciones.length === 0) {
       return { todos: 0, activos: 0, inactivos: 0, eliminados: 0 };
@@ -93,10 +85,6 @@ const CatalogoConfiguracionIG = () => {
     };
   };
 
-  // ============================================
-  // EFECTOS
-  // ============================================
-  
   useEffect(() => {
     cargarTotalConfiguraciones();
     cargarElevadoresDisponibles();
@@ -106,10 +94,6 @@ const CatalogoConfiguracionIG = () => {
     cargarConfiguraciones();
   }, [filterActivo]);
 
-  // ============================================
-  // FUNCIONES DE MANEJO DE EVENTOS
-  // ============================================
-  
   const handleAdd = () => {
     setEditingConfig(null);
     setShowForm(true);
@@ -183,61 +167,61 @@ const CatalogoConfiguracionIG = () => {
     cargarConfiguraciones();
   };
 
-  // ============================================
-  // RENDER
-  // ============================================
-  
   const contadores = contarPorEstado();
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div>
-          {/* <h1 className="text-2xl font-bold text-primary-500">Configuración de Interfaces Gráficas</h1> */}
-          <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-          <p className="text-text-secondary">
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={isDark ? 'text-gray-400' : 'text-text-secondary'}>
             Configura las interfaces gráficas que aparecerán en el menú "Elevadores Gráficos"
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setFilterActivo(true)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm ${
               filterActivo === true 
-                ? 'bg-green-500 text-white shadow-md' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? isDark ? 'bg-green-700 text-white' : 'bg-green-100 text-green-700 border border-green-200'
+                : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             ✅ Activos ({contadores.activos})
           </button>
           <button
             onClick={() => setFilterActivo(false)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm ${
               filterActivo === false 
-                ? 'bg-red-500 text-white shadow-md' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? isDark ? 'bg-red-700 text-white' : 'bg-red-100 text-red-700 border border-red-200'
+                : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             ❌ Inactivos ({contadores.inactivos})
           </button>
           <button
             onClick={() => setFilterActivo(null)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm ${
               filterActivo === null 
-                ? 'bg-primary-500 text-white shadow-md' 
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                ? isDark ? 'bg-cyan-600 text-white' : 'bg-blue-100 text-blue-700 border border-blue-200'
+                : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             📋 Todos ({contadores.todos})
           </button>
-          <span className="px-4 py-2 text-sm text-text-muted">
+          <span className={`px-4 py-2 text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
             🗑️ Eliminados ({contadores.eliminados})
           </span>
           {puedeCrear('configuracion_ig') && (
             <button
               onClick={handleAdd}
-              className="bg-primary-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-700 transition-colors ml-2"
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm ${
+                isDark 
+                  ? 'bg-cyan-600 text-white hover:bg-cyan-700' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+              }`}
             >
               <IconPlus />
               Nueva Configuración
@@ -246,7 +230,6 @@ const CatalogoConfiguracionIG = () => {
         </div>
       </div>
 
-      {/* Mensajes */}
       {message && (
         <div className={`p-4 rounded-lg ${
           message.type === 'success' 
@@ -257,7 +240,6 @@ const CatalogoConfiguracionIG = () => {
         </div>
       )}
 
-      {/* Tabla */}
       <CatalogoConfiguracionIGTable
         configuraciones={configuraciones}
         loading={loading}
@@ -268,17 +250,17 @@ const CatalogoConfiguracionIG = () => {
         puedeEditar={puedeEditar('configuracion_ig')}
         puedeEliminar={puedeEliminar('configuracion_ig')}
         filterActivo={filterActivo}
+        isDark={isDark}
       />
 
-      {/* Modal Formulario */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center sticky top-0 bg-white z-10">
-              <h2 className="text-xl font-semibold text-primary-500">
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto`}>
+            <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center sticky top-0 z-10 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+              <h2 className={`text-xl font-semibold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
                 {editingConfig ? 'Editar Configuración IG' : 'Nueva Configuración IG'}
               </h2>
-              <button onClick={handleCancel} className="text-gray-400 hover:text-gray-600 text-2xl">✕</button>
+              <button onClick={handleCancel} className={isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}>✕</button>
             </div>
             <CatalogoConfiguracionIGForm
               config={editingConfig}
@@ -286,6 +268,7 @@ const CatalogoConfiguracionIG = () => {
               onCancel={handleCancel}
               loading={loading}
               elevadoresDisponibles={elevadoresDisponibles}
+              isDark={isDark}
             />
           </div>
         </div>

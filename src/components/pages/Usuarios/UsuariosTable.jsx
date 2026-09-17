@@ -1,128 +1,124 @@
+// frontend/src/components/pages/Usuarios/UsuariosTable.jsx
 import React from 'react';
 
-// SVG Iconos inline
-const IconEdit = () => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-  </svg>
-);
-
-const IconDelete = () => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-    <path d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"/>
-  </svg>
-);
-
-const IconToggle = () => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-    <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/>
-  </svg>
-);
-
-const rolColors = {
-  SuperAdmin: 'bg-purple-100 text-purple-800',
-  Admin: 'bg-blue-100 text-blue-800',
-  Supervisor: 'bg-green-100 text-green-800',
-  Operador: 'bg-yellow-100 text-yellow-800',
-  Mantenimiento: 'bg-orange-100 text-orange-800'
-};
-
-const UsuariosTable = ({ usuarios, onEdit, onDelete, onToggleActive, loading }) => {
-  if (loading) {
-    return (
-      <div className="bg-white p-8 rounded-xl shadow-card flex justify-center">
-        <span className="text-primary-500">Cargando usuarios...</span>
-      </div>
-    );
-  }
-
-  const formatDate = (timestamp) => {
-    if (!timestamp) return '-';
-    return new Date(timestamp).toLocaleString('es-MX', {
+const UsuariosTable = ({ 
+  usuarios, 
+  onEdit, 
+  onDelete, 
+  onToggleActive, 
+  loading,
+  isDark = false 
+}) => {
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleDateString('es-MX', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
     });
   };
 
+  if (loading) {
+    return (
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-card p-8 flex justify-center`}>
+        <span className={isDark ? 'text-gray-400' : 'text-primary-500'}>Cargando usuarios...</span>
+      </div>
+    );
+  }
+
   return (
-    <div className="bg-white rounded-xl shadow-card overflow-hidden">
+    <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} overflow-hidden`}>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Usuario
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                Nombre Completo
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
+                Nombre
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                Email
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
+                Correo
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Rol
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Estado
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Último Acceso
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-right text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Acciones
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
             {usuarios.length === 0 ? (
               <tr>
-                <td colSpan="7" className="px-6 py-8 text-center text-text-muted">
+                <td colSpan="7" className={`px-6 py-8 text-center ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
                   No hay usuarios registrados
                 </td>
               </tr>
             ) : (
               usuarios.map((usuario) => (
-                <tr key={usuario.id_usuario} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap font-medium text-primary-500">
+                <tr key={usuario.id} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm font-medium ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
                     {usuario.username}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    {`${usuario.nombre || ''} ${usuario.apellido_paterno || ''} ${usuario.apellido_materno || ''}`.trim()}
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                    {usuario.nombre} {usuario.apellido_paterno}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                     {usuario.correo}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${rolColors[usuario.nombreRol] || 'bg-gray-100'}`}>
-                      {usuario.nombreRol || 'N/A'}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      usuario.rol === 'SuperAdmin' 
+                        ? 'bg-purple-100 text-purple-800' 
+                        : 'bg-blue-100 text-blue-800'
+                    }`}>
+                      {usuario.rol}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${usuario.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      usuario.activo 
+                        ? 'bg-green-100 text-green-800' 
+                        : 'bg-red-100 text-red-800'
+                    }`}>
                       {usuario.activo ? 'Activo' : 'Inactivo'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
+                  <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                     {formatDate(usuario.ultimo_acceso)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-right">
                     <div className="flex justify-end gap-2">
                       <button
                         onClick={() => onEdit(usuario)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className={`p-2 rounded-lg transition-colors ${isDark ? 'text-cyan-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'}`}
                         title="Editar"
                       >
-                        <IconEdit />
+                        ✏️
                       </button>
                       <button
-                        onClick={() => onDelete(usuario.id_usuario)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        onClick={() => onToggleActive(usuario.id)}
+                        className={`p-2 rounded-lg transition-colors ${isDark ? 'text-yellow-400 hover:bg-gray-700' : 'text-yellow-600 hover:bg-yellow-50'}`}
+                        title={usuario.activo ? 'Desactivar' : 'Activar'}
+                      >
+                        {usuario.activo ? '⏸️' : '▶️'}
+                      </button>
+                      <button
+                        onClick={() => onDelete(usuario.id)}
+                        className={`p-2 rounded-lg transition-colors ${isDark ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'}`}
                         title="Eliminar"
                       >
-                        <IconDelete />
+                        🗑️
                       </button>
                     </div>
                   </td>
@@ -132,7 +128,7 @@ const UsuariosTable = ({ usuarios, onEdit, onDelete, onToggleActive, loading }) 
           </tbody>
         </table>
       </div>
-      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 text-sm text-text-muted">
+      <div className={`px-6 py-3 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border-t text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
         Mostrando {usuarios.length} usuarios
       </div>
     </div>

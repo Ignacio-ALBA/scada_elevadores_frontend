@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { configuracionIGService } from '../../../services/configuracionIGService';
 
-// SVG Iconos
 const IconChevronUp = () => (
   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
     <path d="M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z"/>
@@ -36,7 +35,8 @@ const CatalogoConfiguracionIGTable = ({
   onReordenar,
   puedeEditar,
   puedeEliminar,
-  filterActivo
+  filterActivo,
+  isDark = false
 }) => {
   const [reordenando, setReordenando] = useState(false);
 
@@ -76,8 +76,8 @@ const CatalogoConfiguracionIGTable = ({
 
   if (loading || reordenando) {
     return (
-      <div className="bg-white p-8 rounded-xl shadow-card flex justify-center">
-        <span className="text-primary-500">
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} p-8 rounded-xl shadow-card flex justify-center`}>
+        <span className={isDark ? 'text-gray-400' : 'text-primary-500'}>
           {reordenando ? 'Actualizando orden...' : 'Cargando configuraciones...'}
         </span>
       </div>
@@ -86,10 +86,10 @@ const CatalogoConfiguracionIGTable = ({
 
   if (configuraciones.length === 0) {
     return (
-      <div className="bg-white p-8 rounded-xl shadow-card text-center">
-        <p className="text-text-muted">{getEmptyMessage()}</p>
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} p-8 rounded-xl shadow-card text-center`}>
+        <p className={isDark ? 'text-gray-400' : 'text-text-muted'}>{getEmptyMessage()}</p>
         {filterActivo === false && (
-          <p className="text-xs text-text-muted mt-2">
+          <p className={`text-xs mt-2 ${isDark ? 'text-gray-500' : 'text-text-muted'}`}>
             Las configuraciones inactivas pueden reactivarse desde el modal de edición
           </p>
         )}
@@ -98,85 +98,85 @@ const CatalogoConfiguracionIGTable = ({
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-card overflow-hidden">
+    <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} overflow-hidden`}>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
             <tr>
-              <th className="px-4 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider w-16">
+              <th className={`px-4 py-3 text-center text-xs font-medium uppercase tracking-wider w-16 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Orden
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Nombre
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Nombre Corto
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Zona
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Elevadores
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Cabinas
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Estado
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-6 py-3 text-right text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Acciones
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
+          <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
             {configuraciones.map((configuracion, index) => (
-              <tr key={configuracion.id_configuracion} className="hover:bg-gray-50 transition-colors">
+              <tr key={configuracion.id_configuracion} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
                 <td className="px-4 py-4 whitespace-nowrap">
                   <div className="flex flex-col items-center">
                     <button
                       onClick={() => handleMover(index, 'up')}
                       disabled={index === 0 || reordenando}
-                      className="p-1 disabled:opacity-30 hover:text-primary-500 transition-colors"
+                      className={`p-1 disabled:opacity-30 transition-colors ${isDark ? 'text-gray-400 hover:text-cyan-400' : 'text-gray-400 hover:text-primary-500'}`}
                       title="Mover arriba"
                     >
                       <IconChevronUp />
                     </button>
-                    <span className="text-xs font-medium text-text-secondary">
+                    <span className={`text-xs font-medium ${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>
                       {index + 1}
                     </span>
                     <button
                       onClick={() => handleMover(index, 'down')}
                       disabled={index === configuraciones.length - 1 || reordenando}
-                      className="p-1 disabled:opacity-30 hover:text-primary-500 transition-colors"
+                      className={`p-1 disabled:opacity-30 transition-colors ${isDark ? 'text-gray-400 hover:text-cyan-400' : 'text-gray-400 hover:text-primary-500'}`}
                       title="Mover abajo"
                     >
                       <IconChevronDown />
                     </button>
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap font-medium text-gray-900">
+                <td className={`px-6 py-4 whitespace-nowrap font-medium ${isDark ? 'text-cyan-400' : 'text-gray-900'}`}>
                   {configuracion.nombre}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
                   {configuracion.nombre_corto || '-'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
                   {configuracion.zona || '-'}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
                   {configuracion.elevadores?.length || 0}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>
                   {configuracion.cabinas?.length || 0}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   {configuracion.estado === 'eliminado' ? (
-                    <span className="px-2 py-1 text-xs rounded-full bg-red-100 text-red-800">Eliminado</span>
+                    <span className={`px-2 py-1 text-xs rounded-full ${isDark ? 'bg-red-900/50 text-red-300' : 'bg-red-100 text-red-800'}`}>Eliminado</span>
                   ) : configuracion.estado === 'activo' || configuracion.activo === true ? (
-                    <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800">Activo</span>
+                    <span className={`px-2 py-1 text-xs rounded-full ${isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800'}`}>Activo</span>
                   ) : (
-                    <span className="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-800">Inactivo</span>
+                    <span className={`px-2 py-1 text-xs rounded-full ${isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800'}`}>Inactivo</span>
                   )}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
@@ -184,7 +184,7 @@ const CatalogoConfiguracionIGTable = ({
                     {puedeEditar && configuracion.estado !== 'eliminado' && (
                       <button
                         onClick={() => onEdit(configuracion)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        className={`p-2 rounded-lg transition-colors ${isDark ? 'text-cyan-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'}`}
                         title="Editar"
                       >
                         <IconEdit />
@@ -193,14 +193,14 @@ const CatalogoConfiguracionIGTable = ({
                     {puedeEliminar && configuracion.estado !== 'eliminado' && (
                       <button
                         onClick={() => onDelete(configuracion.id_configuracion)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        className={`p-2 rounded-lg transition-colors ${isDark ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'}`}
                         title="Eliminar"
                       >
                         <IconDelete />
                       </button>
                     )}
                     {configuracion.estado === 'eliminado' && (
-                      <span className="text-xs text-text-muted">Eliminado</span>
+                      <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>Eliminado</span>
                     )}
                   </div>
                 </td>
@@ -209,9 +209,9 @@ const CatalogoConfiguracionIGTable = ({
           </tbody>
         </table>
       </div>
-      <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 text-sm text-text-muted flex justify-between">
+      <div className={`px-6 py-3 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border-t text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'} flex justify-between`}>
         <span>Mostrando {configuraciones.length} configuraciones</span>
-        <span className="text-xs">Usa las flechas ↑↓ para reordenar</span>
+        <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-text-muted'}`}>Usa las flechas ↑↓ para reordenar</span>
       </div>
     </div>
   );

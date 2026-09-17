@@ -11,7 +11,6 @@ import Eventos from './components/pages/Eventos/Eventos';
 import Mantenimiento from './components/pages/Mantenimiento/Mantenimiento';
 import Reportes from './components/pages/Reportes/Reportes';
 import Usuarios from './components/pages/Usuarios/Usuarios';
-import Roles from './components/pages/Roles/Roles';
 import Privilegios from './components/pages/Privilegios/Privilegios';
 import Configuraciones from './components/pages/Configuraciones/Configuraciones';
 import Integraciones from './components/pages/Integraciones/Integraciones';
@@ -33,7 +32,14 @@ import ElevadoresGraficos from './components/pages/ElevadoresGraficos/Elevadores
 import InterfazGrafica from './components/pages/InterfazGrafica/InterfazGrafica';
 import VinculacionParametros from './components/pages/Catalogo/VinculacionParametros';
 import MSParametros from './components/pages/MSParametros/MSParametros';
-import Logs from './components/pages/Logs';
+import Logs from './components/pages/Logs/Logs';
+import Estilos from './components/pages/Estilos/Estilos';
+import CatalogoElevadores from './components/pages/Catalogo/CatalogoElevadores';
+import IconosConfig from './components/pages/Configuraciones/IconosConfig';
+import CatalogoVistas from './components/pages/Catalogo/CatalogoVistas';
+import CambiarPassword from './components/pages/Perfil/CambiarPassword';
+import Perfil from './components/pages/Perfil/Perfil';
+import Notificaciones from './components/pages/Notificaciones/Notificaciones';
 
 export const router = createBrowserRouter(
   [
@@ -59,7 +65,6 @@ export const router = createBrowserRouter(
         { path: 'reportes/mantenimiento', element: <Mantenimiento /> },
         { path: 'reportes/log', element: <Logs /> },
         { path: 'usuarios', element: <Usuarios /> },
-        { path: 'roles', element: <Roles /> },
         { path: 'privilegios', element: <Privilegios /> },
         { path: 'configuraciones', element: <Configuraciones /> },
         { path: 'integraciones', element: <Integraciones /> },
@@ -73,19 +78,32 @@ export const router = createBrowserRouter(
         { path: 'interfaz-grafica/:id', element: <InterfazGrafica /> },
         { path: 'vinculacion-parametros', element: <VinculacionParametros /> },
         { path: 'cabinas-graficos', element: <div>Cabinas Gráficos</div> },
-        { path: 'usuarios', element: <Usuarios /> },
-
+        { path: 'estilos', element: <Estilos /> },
         { path: 'configuracion-ig', element: <CatalogoConfiguracionIG /> },
         { path: 'controladores', element: <CatalogoControladores /> },
-        // { path: 'variables-scada', element: <CatalogoVariablesScada /> },
         { path: 'variables-scada', element: <CatalogoVariablesScada canEdit={true} /> },
         { path: 'roles', element: <CatalogoRoles canEdit={true} /> },
         { path: 'permisos', element: <CatalogoPermisos canEdit={true} /> },
         { path: 'elevadores-graficos', element: <ElevadoresGraficos /> },
         { path: 'ms-parametros', element: <MSParametros /> },
-        
-        // Ruta genérica de catálogo
+        { path: 'perfil', element: <Perfil /> },
+        { path: 'cambiar-contrasena', element: <CambiarPassword /> },
+        { path: 'notificaciones', element: <Notificaciones /> },
+
+        //  RUTAS DE CATÁLOGO (CORREGIDAS)
         { path: 'catalogo', element: <Catalogo /> },
+        { path: 'catalogo/elevadores', element: <Elevadores /> },
+        { path: 'catalogo/controladores', element: <CatalogoControladores /> },
+        { path: 'catalogo/usuarios', element: <Usuarios /> },
+        { path: 'catalogo/roles', element: <CatalogoRoles canEdit={true} /> },
+        { path: 'catalogo/permisos', element: <CatalogoPermisos canEdit={true} /> },
+        { path: 'catalogo/cabinas', element: <Cabinas /> },
+        { path: 'catalogo/variables-scada', element: <CatalogoVariablesScada canEdit={true} /> },
+        { path: 'catalogo/configuracion-ig', element: <CatalogoConfiguracionIG /> },
+        { path: 'configuraciones/iconos', element: <IconosConfig /> },
+        { path: 'vistas', element: <CatalogoVistas /> },
+
+        // Ruta genérica para interfaces gráficas
         { path: 'interfaces-graficas', element: <div>Interfaces Gráficas</div> },
       ],
     },

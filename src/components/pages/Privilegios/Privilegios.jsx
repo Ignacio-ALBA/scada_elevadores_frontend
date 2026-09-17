@@ -1,3 +1,4 @@
+// frontend/src/components/pages/Privilegios/Privilegios.jsx
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../../context/AuthContext';
 import api from '../../../services/api';
@@ -42,6 +43,10 @@ const Privilegios = () => {
   const [message, setMessage] = useState(null);
   const pageTitle = useNombreInterfaz('privilegios');
 
+  // ✅ Obtener el tema para estilos dinámicos
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
+
   // Cargar roles al montar el componente
   useEffect(() => {
     cargarRoles();
@@ -57,23 +62,17 @@ const Privilegios = () => {
   const cargarRoles = async () => {
     setLoading(true);
     try {
-      // console.log('🔍 Cargando roles...');
       const response = await api.get('/roles/');
-      // console.log('🔍 Respuesta de roles:', response.data);
       
-      // Verificar que los datos existen
-      if (response.data?.data?.data && response.data.data.data.length > 0) {
-        // Mapear para asegurar que tienen el campo 'id'
-        const rolesData = response.data.data.data.map(rol => ({
-          id: rol.idRol || rol.id,  // Intentar con idRol primero
+      if (response.data && response.data.length > 0) {
+        const rolesData = response.data.map(rol => ({
+          id: rol.id_rol || rol.id,
           nombre: rol.nombre,
-          nivel: rol.nivelJerarquia || rol.nivel_jerarquia || rol.nivel
+          nivel: rol.nivel_jerarquia || rol.nivel
         }));
-        // console.log('🔍 Roles mapeados:', rolesData);
         setRoles(rolesData);
         setSelectedRolId(rolesData[0].id);
       } else {
-        // Fallback: roles mock
         console.warn('⚠️ No hay roles en la API, usando mock');
         const mockRoles = [
           { id: 1, nombre: 'SuperAdmin', nivel: 1 },
@@ -87,7 +86,6 @@ const Privilegios = () => {
       }
     } catch (error) {
       console.error('❌ Error cargando roles:', error);
-      // Fallback: roles mock
       const mockRoles = [
         { id: 1, nombre: 'SuperAdmin', nivel: 1 },
         { id: 2, nombre: 'Admin', nivel: 2 },
@@ -110,14 +108,10 @@ const Privilegios = () => {
     
     setLoading(true);
     try {
-      // console.log(`🔍 Cargando permisos para rol: ${rolId}`);
       const response = await api.get(`/permisos/rol/${rolId}`);
-      // console.log('🔍 Permisos cargados:', response.data);
       
-      // const modulos = response.data.modulos || {};
       const modulos = {};
-      const permisosData = response.data?.data?.data || response.data?.data || response.data || [];
-      (Array.isArray(permisosData) ? permisosData : []).forEach(permiso => {
+      response.data.forEach(permiso => {
         if (permiso.modulo_clave) {
           modulos[permiso.modulo_clave] = {
             ver: permiso.puede_ver,
@@ -128,7 +122,6 @@ const Privilegios = () => {
         }
       });
 
-      // Filtrar módulos inválidos
       const filteredModulos = {};
       Object.keys(modulos).forEach(key => {
         if (key && key !== 'null' && key !== 'undefined') {
@@ -202,8 +195,8 @@ const Privilegios = () => {
 
   if (loading && roles.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <span className="text-primary-500">Cargando privilegios...</span>
+      <div className={`flex items-center justify-center h-64 ${isDark ? 'text-gray-400' : 'text-primary-500'}`}>
+        <span>Cargando privilegios...</span>
       </div>
     );
   }
@@ -215,9 +208,10 @@ const Privilegios = () => {
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          {/* <h1 className="text-2xl font-bold text-primary-500">Privilegios</h1> */}
-          <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-          <p className="text-text-secondary">
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={`${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>
             Gestiona los permisos de cada rol en el sistema
           </p>
         </div>
@@ -225,7 +219,11 @@ const Privilegios = () => {
           <button
             onClick={handleReset}
             disabled={loading}
-            className="px-4 py-2 border border-gray-300 rounded-lg flex items-center gap-2 hover:bg-gray-50 transition-colors disabled:opacity-50"
+            className={`px-4 py-2 border rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 ${
+              isDark 
+                ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
           >
             <IconRefresh />
             Restablecer
@@ -233,7 +231,11 @@ const Privilegios = () => {
           <button
             onClick={handleSave}
             disabled={saving || loading}
-            className="bg-primary-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-700 transition-colors disabled:opacity-50"
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 shadow-sm ${
+              isDark 
+                ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+            }`}
           >
             <IconSave />
             {saving ? 'Guardando...' : 'Guardar Cambios'}
@@ -242,14 +244,18 @@ const Privilegios = () => {
       </div>
 
       {/* Selector de Rol */}
-      <div className="bg-white p-4 rounded-xl shadow-card">
-        <label className="block text-sm font-medium text-text-secondary mb-2">
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} p-4 rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'}`}>
+        <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
           Seleccionar Rol
         </label>
         <select
           value={selectedRolId || ''}
           onChange={handleRolChange}
-          className="w-full md:w-64 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className={`w-full md:w-64 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-700'
+          }`}
         >
           {roles.length === 0 ? (
             <option value="">No hay roles disponibles</option>
@@ -271,41 +277,41 @@ const Privilegios = () => {
       )}
 
       {/* Tabla de Permisos */}
-      <div className="bg-white rounded-xl shadow-card overflow-hidden">
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} overflow-hidden`}>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
+            <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider w-1/4">
+                <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider w-1/4 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                   Módulo
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
+                <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                   Ver
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
+                <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                   Crear
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
+                <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                   Editar
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
+                <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                   Eliminar
                 </th>
-                <th className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
+                <th className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                   Todos
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
               {loading ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-text-muted">
+                  <td colSpan="6" className={`px-6 py-8 text-center ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
                     Cargando permisos...
                   </td>
                 </tr>
               ) : moduloKeys.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-6 py-8 text-center text-text-muted">
+                  <td colSpan="6" className={`px-6 py-8 text-center ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
                     No hay permisos configurados para este rol
                   </td>
                 </tr>
@@ -316,8 +322,8 @@ const Privilegios = () => {
                   const allChecked = p.ver && p.crear && p.editar && p.eliminar;
                   
                   return (
-                    <tr key={modulo} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 font-medium text-primary-500">
+                    <tr key={modulo} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                      <td className={`px-6 py-4 font-medium ${isDark ? 'text-blue-400' : 'text-primary-500'}`}>
                         {label}
                       </td>
                       <td className="px-6 py-4 text-center">
@@ -367,10 +373,12 @@ const Privilegios = () => {
             </tbody>
           </table>
         </div>
-        <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 text-sm text-text-muted">
+        <div className={`px-6 py-3 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border-t text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
           {selectedRolId && roles.length > 0 && (
             <span>
-              Gestionando permisos para <strong>{roles.find(r => r.id === selectedRolId)?.nombre || 'rol seleccionado'}</strong>
+              Gestionando permisos para <strong className={isDark ? 'text-gray-200' : 'text-gray-800'}>
+                {roles.find(r => r.id === selectedRolId)?.nombre || 'rol seleccionado'}
+              </strong>
             </span>
           )}
         </div>

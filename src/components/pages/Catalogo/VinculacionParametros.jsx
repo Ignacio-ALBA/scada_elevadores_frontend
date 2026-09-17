@@ -1,23 +1,23 @@
 // frontend/src/components/pages/Catalogo/VinculacionParametros.jsx
 import React, { useState, useEffect } from 'react';
-import { configuracionIGService } from '../../../services/configuracionIGService';
-import { variableScadaService } from '../../../services/variableScadaService';
 import { parametroElevadorService } from '../../../services/parametroElevadorService';
 import { parametroCabinaService } from '../../../services/parametroCabinaService';
-import { usePermisos } from '../../../context/PermisoContext';
+import { configuracionIGService } from '../../../services/configuracionIGService';
+import { useSafeTheme } from '../../../hooks/useSafeTheme';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
 
 const VinculacionParametros = () => {
   const [configuraciones, setConfiguraciones] = useState([]);
-  const [configSeleccionada, setConfigSeleccionada] = useState(null);
-  const [variablesScada, setVariablesScada] = useState([]);
+  const [selectedConfiguracion, setSelectedConfiguracion] = useState(null);
   const [parametrosElevador, setParametrosElevador] = useState([]);
   const [parametrosCabina, setParametrosCabina] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [message, setMessage] = useState(null);
-  const [editando, setEditando] = useState(null);
-  const { puedeEditar } = usePermisos();
+  const [error, setError] = useState(null);
   const pageTitle = useNombreInterfaz('vinculacion_parametros');
+  
+  // ✅ Obtener tema
+  const { temaActual } = useSafeTheme();
+  const isDark = temaActual === 'oscuro';
 
   useEffect(() => {
     cargarDatos();
@@ -25,250 +25,218 @@ const VinculacionParametros = () => {
 
   const cargarDatos = async () => {
     setLoading(true);
+    setError(null);
     try {
-      const [configs, variables] = await Promise.all([
+      const [configsData] = await Promise.all([
         configuracionIGService.getAll({ activo: true }),
-        variableScadaService.getAll({ activo: true })
       ]);
-      setConfiguraciones(configs);
-      setVariablesScada(variables);
-      if (configs.length > 0) {
-        setConfigSeleccionada(configs[0]);
-        await cargarParametros(configs[0].id_configuracion);
+      setConfiguraciones(configsData);
+      if (configsData.length > 0) {
+        setSelectedConfiguracion(configsData[0]);
+        await cargarParametros(configsData[0].id_configuracion);
       }
     } catch (error) {
       console.error('Error cargando datos:', error);
-      setMessage({ type: 'error', text: 'Error al cargar los datos' });
+      setError('Error al cargar los datos');
     } finally {
       setLoading(false);
     }
   };
 
-  const cargarParametros = async (configId) => {
+  const cargarParametros = async (idConfiguracion) => {
     try {
-      // Obtener parámetros de elevadores y cabinas de esta configuración
-      const [paramsElev, paramsCab] = await Promise.all([
-        parametroElevadorService.getByConfiguracion(configId),
-        parametroCabinaService.getByConfiguracion(configId)
+      const [elevadorData, cabinaData] = await Promise.all([
+        parametroElevadorService.getAll({ activo: true }),
+        parametroCabinaService.getByConfiguracion(idConfiguracion)
       ]);
-      setParametrosElevador(paramsElev);
-      setParametrosCabina(paramsCab);
+      setParametrosElevador(elevadorData || []);
+      setParametrosCabina(cabinaData || []);
     } catch (error) {
       console.error('Error cargando parámetros:', error);
+      // ✅ Si hay error 404, solo mostrar array vacío
+      if (error.response?.status === 404) {
+        setParametrosCabina([]);
+      } else {
+        setError('Error al cargar los parámetros');
+      }
     }
   };
 
   const handleConfigChange = (e) => {
-    const configId = parseInt(e.target.value);
-    const config = configuraciones.find(c => c.id_configuracion === configId);
-    setConfigSeleccionada(config);
-    cargarParametros(configId);
-  };
-
-  const handleVincular = async (tipo, id, variableId) => {
-    try {
-      if (tipo === 'elevador') {
-        await parametroElevadorService.update(id, { variable_scada_id: variableId || null });
-      } else {
-        await parametroCabinaService.update(id, { variable_scada_id: variableId || null });
-      }
-      await cargarParametros(configSeleccionada.id_configuracion);
-      setMessage({ type: 'success', text: 'Vinculación actualizada correctamente' });
-    } catch (error) {
-      console.error('Error vinculando:', error);
-      setMessage({ type: 'error', text: 'Error al vincular el parámetro' });
+    const id = parseInt(e.target.value);
+    const config = configuraciones.find(c => c.id_configuracion === id);
+    setSelectedConfiguracion(config);
+    if (config) {
+      cargarParametros(config.id_configuracion);
     }
-    setTimeout(() => setMessage(null), 5000);
   };
 
-  // Obtener variables SCADA disponibles para un parámetro específico
-  const getVariablesDisponibles = (parametro) => {
-    // Filtrar variables que coincidan con el nombre del parámetro
-    const nombreBuscar = parametro.nombre.toLowerCase();
-    return variablesScada.filter(v => 
-      v.nombre.toLowerCase().includes(nombreBuscar) ||
-      v.titulo.toLowerCase().includes(nombreBuscar)
-    );
-  };
+  // ✅ Obtener colores del tema para estilos
+  const getCardStyles = () => ({
+    backgroundColor: isDark ? '#1f2937' : '#ffffff',
+    borderColor: isDark ? '#374151' : '#e5e7eb',
+    textColor: isDark ? '#f3f4f6' : '#1f2937',
+    textSecondary: isDark ? '#9ca3af' : '#6b7280',
+    hoverBg: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+  });
+
+  const styles = getCardStyles();
 
   if (loading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <span className="text-primary-500">Cargando datos...</span>
+      <div className={`flex justify-center items-center h-64 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className="text-center">
+          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto ${isDark ? 'border-cyan-400' : 'border-primary-500'}`}></div>
+          <p className={`mt-4 ${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>Cargando datos...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={`p-6 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <div className={`p-4 rounded-lg ${isDark ? 'bg-red-900/30 text-red-300 border border-red-800' : 'bg-red-50 text-red-700 border border-red-200'}`}>
+          {error}
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className={`space-y-6 ${isDark ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen p-6`}>
       {/* Header */}
-      <div>
-        {/* <h1 className="text-2xl font-bold text-primary-500">Vinculación de Parámetros</h1> */}
-        <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-        <p className="text-text-secondary">
-          Vincula los parámetros de elevadores y cabinas con las variables SCADA del emulador
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={isDark ? 'text-gray-400' : 'text-text-secondary'}>
+            Vincula parámetros de elevadores y cabinas con interfaces gráficas
+          </p>
+        </div>
       </div>
 
-      {message && (
-        <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-          {message.text}
-        </div>
-      )}
-
-      {/* Selector de Configuración IG */}
-      <div className="bg-white rounded-xl shadow-card p-4">
-        <label className="block text-sm font-medium text-text-secondary mb-2">
-          Seleccionar Interfaz Gráfica
+      {/* Selector de configuración */}
+      <div className={`p-4 rounded-xl ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border shadow-sm`}>
+        <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
+          Seleccionar configuración:
         </label>
         <select
-          value={configSeleccionada?.id_configuracion || ''}
+          value={selectedConfiguracion?.id_configuracion || ''}
           onChange={handleConfigChange}
-          className="w-full max-w-md px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className={`w-full max-w-md px-4 py-2 rounded-lg border focus:outline-none focus:ring-2 ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-200 focus:ring-cyan-400' 
+              : 'bg-white border-gray-300 text-gray-800 focus:ring-primary-500'
+          }`}
         >
-          {configuraciones.map(c => (
-            <option key={c.id_configuracion} value={c.id_configuracion}>
-              {c.nombre} ({c.elevadores?.length || 0} elevadores)
+          {configuraciones.map((config) => (
+            <option key={config.id_configuracion} value={config.id_configuracion}>
+              {config.nombre} {config.zona ? `- ${config.zona}` : ''}
             </option>
           ))}
         </select>
+        {selectedConfiguracion && (
+          <p className={`mt-2 text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
+            {selectedConfiguracion.descripcion || 'Sin descripción'}
+          </p>
+        )}
       </div>
 
-      {/* Parámetros de Elevadores */}
-      {parametrosElevador.length > 0 && (
-        <div className="bg-white rounded-xl shadow-card overflow-hidden">
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <h3 className="text-lg font-semibold text-primary-500">
-              Parámetros de Elevadores
-              <span className="ml-2 text-sm font-normal text-text-muted">
-                ({parametrosElevador.length})
-              </span>
-            </h3>
-          </div>
+      {/* Parámetros de Elevador */}
+      <div className={`p-4 rounded-xl ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border shadow-sm`}>
+        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
+          Parámetros de Elevador
+        </h2>
+        {parametrosElevador.length === 0 ? (
+          <p className={isDark ? 'text-gray-400' : 'text-text-muted'}>No hay parámetros de elevador disponibles</p>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Elevador</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Parámetro</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Variable SCADA</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Acción</th>
+                  <th className={`px-4 py-2 text-left text-xs font-medium uppercase ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Nombre</th>
+                  <th className={`px-4 py-2 text-left text-xs font-medium uppercase ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Variable SCADA</th>
+                  <th className={`px-4 py-2 text-left text-xs font-medium uppercase ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Unidad</th>
+                  <th className={`px-4 py-2 text-left text-xs font-medium uppercase ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Estado</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {parametrosElevador.map((p) => {
-                  const variablesDisponibles = getVariablesDisponibles(p);
-                  const variableActual = variablesScada.find(v => v.id_variable === p.variable_scada_id);
-                  
-                  return (
-                    <tr key={p.id_parametro} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {p.elevador_nombre || `Elevador ${p.id_elevador}`}
-                      </td>
-                      <td className="px-4 py-3 text-sm">{p.nombre}</td>
-                      <td className="px-4 py-3 text-sm">
-                        {variableActual ? (
-                          <span className="text-cyan-600 font-mono">
-                            {variableActual.nombre} ({variableActual.direccion_modbus})
-                          </span>
-                        ) : (
-                          <span className="text-red-400">No vinculado</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={p.variable_scada_id || ''}
-                          onChange={(e) => handleVincular('elevador', p.id_parametro, parseInt(e.target.value) || null)}
-                          className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          disabled={!puedeEditar('configuracion_ig')}
-                        >
-                          <option value="">Seleccionar...</option>
-                          {variablesDisponibles.map(v => (
-                            <option key={v.id_variable} value={v.id_variable}>
-                              {v.nombre} ({v.direccion_modbus})
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  );
-                })}
+              <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                {parametrosElevador.slice(0, 10).map((param) => (
+                  <tr key={param.id_parametro || param.id} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                    <td className={`px-4 py-2 text-sm ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>{param.nombre}</td>
+                    <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{param.variable_scada_nombre || '-'}</td>
+                    <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{param.unidad || '-'}</td>
+                    <td className="px-4 py-2 text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        param.activo 
+                          ? isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800'
+                          : isDark ? 'bg-red-900/50 text-red-300' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {param.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+            {parametrosElevador.length > 10 && (
+              <p className={`mt-2 text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
+                Mostrando 10 de {parametrosElevador.length} parámetros
+              </p>
+            )}
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* Parámetros de Cabinas */}
-      {parametrosCabina.length > 0 && (
-        <div className="bg-white rounded-xl shadow-card overflow-hidden">
-          <div className="p-4 border-b border-gray-200 bg-gray-50">
-            <h3 className="text-lg font-semibold text-primary-500">
-              Parámetros de Cabinas
-              <span className="ml-2 text-sm font-normal text-text-muted">
-                ({parametrosCabina.length})
-              </span>
-            </h3>
-          </div>
+      {/* Parámetros de Cabina */}
+      <div className={`p-4 rounded-xl ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} border shadow-sm`}>
+        <h2 className={`text-lg font-semibold mb-4 ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
+          Parámetros de Cabina
+        </h2>
+        {parametrosCabina.length === 0 ? (
+          <p className={isDark ? 'text-gray-400' : 'text-text-muted'}>
+            {parametrosCabina.error ? 'Error al cargar parámetros de cabina' : 'No hay parámetros de cabina para esta configuración'}
+          </p>
+        ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-gray-50">
+              <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Cabina</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Parámetro</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Variable SCADA</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Acción</th>
+                  <th className={`px-4 py-2 text-left text-xs font-medium uppercase ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Nombre</th>
+                  <th className={`px-4 py-2 text-left text-xs font-medium uppercase ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Variable SCADA</th>
+                  <th className={`px-4 py-2 text-left text-xs font-medium uppercase ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Unidad</th>
+                  <th className={`px-4 py-2 text-left text-xs font-medium uppercase ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Estado</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200">
-                {parametrosCabina.map((p) => {
-                  const variablesDisponibles = getVariablesDisponibles(p);
-                  const variableActual = variablesScada.find(v => v.id_variable === p.variable_scada_id);
-                  
-                  return (
-                    <tr key={p.id_parametro} className="hover:bg-gray-50">
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
-                        {p.cabina_nombre || `Cabina ${p.id_cabina}`}
-                      </td>
-                      <td className="px-4 py-3 text-sm">{p.nombre}</td>
-                      <td className="px-4 py-3 text-sm">
-                        {variableActual ? (
-                          <span className="text-cyan-600 font-mono">
-                            {variableActual.nombre} ({variableActual.direccion_modbus})
-                          </span>
-                        ) : (
-                          <span className="text-red-400">No vinculado</span>
-                        )}
-                      </td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={p.variable_scada_id || ''}
-                          onChange={(e) => handleVincular('cabina', p.id_parametro, parseInt(e.target.value) || null)}
-                          className="px-3 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                          disabled={!puedeEditar('configuracion_ig')}
-                        >
-                          <option value="">Seleccionar...</option>
-                          {variablesDisponibles.map(v => (
-                            <option key={v.id_variable} value={v.id_variable}>
-                              {v.nombre} ({v.direccion_modbus})
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                    </tr>
-                  );
-                })}
+              <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
+                {parametrosCabina.slice(0, 10).map((param) => (
+                  <tr key={param.id_parametro || param.id} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                    <td className={`px-4 py-2 text-sm ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>{param.nombre}</td>
+                    <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{param.variable_scada_nombre || '-'}</td>
+                    <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{param.unidad || '-'}</td>
+                    <td className="px-4 py-2 text-sm">
+                      <span className={`px-2 py-1 rounded-full text-xs ${
+                        param.activo 
+                          ? isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800'
+                          : isDark ? 'bg-red-900/50 text-red-300' : 'bg-red-100 text-red-800'
+                      }`}>
+                        {param.activo ? 'Activo' : 'Inactivo'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
               </tbody>
             </table>
+            {parametrosCabina.length > 10 && (
+              <p className={`mt-2 text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
+                Mostrando 10 de {parametrosCabina.length} parámetros
+              </p>
+            )}
           </div>
-        </div>
-      )}
-
-      {parametrosElevador.length === 0 && parametrosCabina.length === 0 && (
-        <div className="bg-white rounded-xl shadow-card p-8 text-center">
-          <p className="text-text-muted">No hay parámetros para vincular en esta configuración</p>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

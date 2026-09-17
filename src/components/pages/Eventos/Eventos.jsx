@@ -28,11 +28,13 @@ const Eventos = () => {
   });
   const pageTitle = useNombreInterfaz('eventos');
 
-  // ✅ Cargar eventos usando el mismo filtro que Reportes
+  // ✅ Obtener el tema para estilos dinámicos
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
+
   const cargarEventos = async () => {
     setLoading(true);
     try {
-      // ✅ Usar el mismo filtro que exportación
       const params = {};
       if (filters.fecha_desde) {
         params.fecha_desde = filters.fecha_desde;
@@ -44,7 +46,6 @@ const Eventos = () => {
         params.tipo = filters.tipo;
       }
       
-      // Obtener datos del backend con los mismos filtros
       const data = await eventosService.getAllWithFilters(
         params.fecha_desde,
         params.fecha_hasta,
@@ -65,7 +66,6 @@ const Eventos = () => {
     }
   };
 
-  // ✅ Ejecutar al cambiar filtros o paginación
   useEffect(() => {
     cargarEventos();
   }, [filters, currentPage, pageSize]);
@@ -119,15 +119,22 @@ const Eventos = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-2">
         <div>
-          {/* <h1 className="text-2xl font-bold text-primary-500">Eventos</h1> */}
-          <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-          <p className="text-text-secondary">Historial de eventos del sistema</p>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={isDark ? 'text-gray-400' : 'text-text-secondary'}>
+            Historial de eventos del sistema
+          </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={handleExportCSV}
             disabled={exporting || loading}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 transition-colors disabled:opacity-50 text-sm"
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 text-sm shadow-sm ${
+              isDark 
+                ? 'bg-cyan-600 text-white hover:bg-cyan-700' 
+                : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200'
+            }`}
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 1a1 1 0 011 1v9.586l2.293-2.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 111.414-1.414L9 11.586V2a1 1 0 011-1z"/>
@@ -138,7 +145,11 @@ const Eventos = () => {
           <button
             onClick={handleExportPDF}
             disabled={exporting || loading}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-700 transition-colors disabled:opacity-50 text-sm"
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 text-sm shadow-sm ${
+              isDark 
+                ? 'bg-cyan-600 text-white hover:bg-cyan-700' 
+                : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200'
+            }`}
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/>
@@ -155,6 +166,7 @@ const Eventos = () => {
         onFilterChange={handleFilterChange}
         onReset={handleResetFilters}
         tipoOptions={tipoOptions}
+        isDark={isDark}
       />
 
       <EventosTable
@@ -166,6 +178,7 @@ const Eventos = () => {
         onPageChange={setCurrentPage}
         onPageSizeChange={setPageSize}
         total={totalEventos}
+        isDark={isDark}
       />
     </div>
   );

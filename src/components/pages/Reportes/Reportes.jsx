@@ -1,3 +1,4 @@
+// frontend/src/components/pages/Reportes/Reportes.jsx
 import React, { useState, useEffect } from 'react';
 import ReportesFilters from './ReportesFilters';
 import { reporteService } from '../../../services/reporteService';
@@ -52,11 +53,14 @@ const Reportes = () => {
   });
   const pageTitle = useNombreInterfaz('reportes');
 
+  // ✅ Obtener el tema para estilos dinámicos
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
+
   useEffect(() => {
     cargarDatos();
   }, [filters, currentPage, pageSize]);
 
-  //  Cargar estadísticas con filtros
   const cargarEstadisticas = async () => {
     try {
       const params = {};
@@ -73,7 +77,6 @@ const Reportes = () => {
     }
   };
 
-  //  Cargar eventos con filtros (igual que exportación)
   const cargarEventos = async () => {
     setLoading(true);
     try {
@@ -106,7 +109,6 @@ const Reportes = () => {
     }
   };
 
-  //  Cargar todos los datos
   const cargarDatos = async () => {
     await Promise.all([cargarEstadisticas(), cargarEventos()]);
   };
@@ -127,11 +129,10 @@ const Reportes = () => {
 
   const handlePageSizeChange = (e) => {
     const newSize = parseInt(e.target.value);
-      setPageSize(newSize);
-      setCurrentPage(1); 
+    setPageSize(newSize);
+    setCurrentPage(1);
   };
 
-  // Exportar CSV con filtros actuales
   const handleExportCSV = async () => {
     setExporting(true);
     try {
@@ -153,7 +154,6 @@ const Reportes = () => {
     }
   };
 
-  // Exportar PDF con filtros actuales
   const handleExportPDF = async () => {
     setExporting(true);
     try {
@@ -192,9 +192,10 @@ const Reportes = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          {/* <h1 className="text-2xl font-bold text-primary-500">Reportes</h1> */}
-          <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-          <p className="text-text-secondary">
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={isDark ? 'text-gray-400' : 'text-text-secondary'}>
             Genera reportes del sistema de elevadores
           </p>
         </div>
@@ -202,7 +203,11 @@ const Reportes = () => {
           <button
             onClick={handleExportCSV}
             disabled={exporting || loading}
-            className="bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-green-700 transition-colors disabled:opacity-50"
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 shadow-sm ${
+              isDark 
+                ? 'bg-cyan-600 text-white hover:bg-cyan-700' 
+                : 'bg-green-100 text-green-700 hover:bg-green-200 border border-green-200'
+            }`}
           >
             <IconDownload />
             {exporting ? 'Exportando...' : 'CSV'}
@@ -210,7 +215,11 @@ const Reportes = () => {
           <button
             onClick={handleExportPDF}
             disabled={exporting || loading}
-            className="bg-red-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-red-700 transition-colors disabled:opacity-50"
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors disabled:opacity-50 shadow-sm ${
+              isDark 
+                ? 'bg-cyan-600 text-white hover:bg-cyan-700' 
+                : 'bg-red-100 text-red-700 hover:bg-red-200 border border-red-200'
+            }`}
           >
             <IconPDF />
             {exporting ? 'Exportando...' : 'PDF'}
@@ -222,42 +231,45 @@ const Reportes = () => {
         filters={filters}
         onFilterChange={handleFilterChange}
         onReset={handleResetFilters}
+        isDark={isDark}
       />
 
-      <div className="bg-white rounded-xl shadow-card p-6">
-        <h3 className="text-lg font-semibold text-primary-500 mb-4">Resumen de eventos</h3>
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} p-6`}>
+        <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
+          Resumen de eventos
+        </h3>
         
         {loading ? (
           <div className="flex justify-center py-8">
-            <span className="text-primary-500">Cargando datos...</span>
+            <span className={isDark ? 'text-gray-400' : 'text-primary-500'}>Cargando datos...</span>
           </div>
         ) : (
           <div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="text-sm text-text-muted">Total Eventos</div>
-                <div className="text-2xl font-bold text-primary-500">{stats.total_eventos}</div>
+              <div className={`${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} p-4 rounded-lg border`}>
+                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>Total Eventos</div>
+                <div className={`text-2xl font-bold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>{stats.total_eventos}</div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="text-sm text-text-muted">Eventos de Hoy</div>
+              <div className={`${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} p-4 rounded-lg border`}>
+                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>Eventos de Hoy</div>
                 <div className="text-2xl font-bold text-green-600">{stats.eventos_hoy}</div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="text-sm text-text-muted">Total Elevadores</div>
-                <div className="text-2xl font-bold text-primary-500">{stats.total_elevadores}</div>
+              <div className={`${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} p-4 rounded-lg border`}>
+                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>Total Elevadores</div>
+                <div className={`text-2xl font-bold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>{stats.total_elevadores}</div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
-                <div className="text-sm text-text-muted">Alarmas Activas</div>
+              <div className={`${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} p-4 rounded-lg border`}>
+                <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>Alarmas Activas</div>
                 <div className="text-2xl font-bold text-red-600">{stats.alarmas_activas}</div>
               </div>
             </div>
 
             {stats.eventos_por_tipo && stats.eventos_por_tipo.length > 0 && (
               <div className="mt-4">
-                <h4 className="font-medium text-text-secondary mb-2">Eventos por tipo</h4>
+                <h4 className={`font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Eventos por tipo</h4>
                 <div className="flex flex-wrap gap-2">
                   {stats.eventos_por_tipo.map((item, index) => (
-                    <span key={index} className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full text-sm">
+                    <span key={index} className={`px-3 py-1 rounded-full text-sm ${isDark ? 'bg-cyan-900/30 text-cyan-300' : 'bg-blue-50 text-blue-700'}`}>
                       {item.tipo}: {item.cantidad}
                     </span>
                   ))}
@@ -268,60 +280,62 @@ const Reportes = () => {
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-card overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
-          <h3 className="text-lg font-semibold text-primary-500">Vista previa de eventos</h3>
-          <span className="text-sm text-text-muted">
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} overflow-hidden`}>
+        <div className={`px-6 py-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center flex-wrap gap-2`}>
+          <h3 className={`text-lg font-semibold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
+            Vista previa de eventos
+          </h3>
+          <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
             Mostrando {eventos.length} de {totalEventos} eventos
           </span>
         </div>
 
         {loading ? (
           <div className="flex justify-center py-8">
-            <span className="text-primary-500">Cargando eventos...</span>
+            <span className={isDark ? 'text-gray-400' : 'text-primary-500'}>Cargando eventos...</span>
           </div>
         ) : eventos.length === 0 ? (
-          <div className="text-center py-8 text-text-muted">
+          <div className={`text-center py-8 ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
             No hay eventos para mostrar
           </div>
         ) : (
           <>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+                <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+                    <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                       Fecha/Hora
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+                    <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                       Elevador
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+                    <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                       Descripción
                     </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+                    <th className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                       Usuario
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
+                <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
                   {eventos.map((evento) => (
-                    <tr key={evento.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                    <tr key={evento.id} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                         {formatDate(evento.timestamp)}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="font-medium text-primary-500 text-sm">
+                        <div className={`font-medium text-sm ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
                           {evento.elevador_codigo || '-'}
                         </div>
-                        <div className="text-xs text-text-muted">
+                        <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
                           {evento.elevador_nombre || ''}
                         </div>
                       </td>
-                      <td className="px-6 py-4 text-sm">
+                      <td className={`px-6 py-4 text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                         {evento.descripcion || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                         {evento.usuario || '-'}
                       </td>
                     </tr>
@@ -331,15 +345,19 @@ const Reportes = () => {
             </div>
 
             {totalPages > 1 && (
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 flex justify-between items-center flex-wrap gap-2">
+              <div className={`px-6 py-4 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border-t flex justify-between items-center flex-wrap gap-2`}>
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-text-muted">
+                  <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
                     Página {currentPage} de {totalPages}
                   </span>
                   <select
                     value={pageSize}
                     onChange={handlePageSizeChange}
-                    className="ml-4 px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`ml-4 px-2 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-700'
+                    }`}
                   >
                     <option value={5}>5 por página</option>
                     <option value={10}>10 por página</option>
@@ -352,14 +370,22 @@ const Reportes = () => {
                   <button
                     onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                     disabled={currentPage === 1}
-                    className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`px-3 py-1 border rounded-lg transition-colors disabled:opacity-50 ${
+                      isDark 
+                        ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                        : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                    }`}
                   >
                     <IconPrev />
                   </button>
                   <button
                     onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                     disabled={currentPage === totalPages}
-                    className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className={`px-3 py-1 border rounded-lg transition-colors disabled:opacity-50 ${
+                      isDark 
+                        ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                        : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+                    }`}
                   >
                     <IconNext />
                   </button>

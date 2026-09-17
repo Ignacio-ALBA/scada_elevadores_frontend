@@ -1,13 +1,92 @@
 // frontend/src/components/layout/Sidebar.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { usePermisos } from '../../context/PermisoContext';
+import { usePermisos, PERMISOS_POR_ROL } from '../../context/PermisoContext';
 import { useAuth } from '../../context/AuthContext';
 import { interfaceVisualService } from '../../services/interfaceVisualService';
 import { configuracionService } from '../../services/configuracionService';
+import { useSafeTheme } from '../../hooks/useSafeTheme';
+import api from '../../services/api';
 
 // ============================================
-// SVG ICONOS INLINE (todos)
+//  FUNCIONES DE UTILIDAD - PARSEAR JSON
+// ============================================
+
+const getRealValue = (val) => {
+  if (!val) return null;
+  
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      if (parsed && typeof parsed === 'object' && parsed.value) {
+        return parsed.value;
+      }
+      return val;
+    } catch (e) {
+      return val;
+    }
+  }
+  
+  if (typeof val === 'object' && val !== null) {
+    if (val.value) {
+      return val.value;
+    }
+    if (val.type === 'gradient' && val.gradient) {
+      const dir = val.gradient.direction || 'to right';
+      const colors = val.gradient.colors || ['#3b82f6', '#8b5cf6'];
+      return `linear-gradient(${dir}, ${colors.join(', ')})`;
+    }
+    return null;
+  }
+  
+  return val;
+};
+
+const getBackgroundValue = (val) => {
+  if (!val) return null;
+  
+  if (typeof val === 'string') {
+    try {
+      const parsed = JSON.parse(val);
+      if (parsed && typeof parsed === 'object') {
+        if (parsed.value) {
+          return parsed.value;
+        }
+        if (parsed.type === 'gradient' && parsed.gradient) {
+          const dir = parsed.gradient.direction || 'to right';
+          const colors = parsed.gradient.colors || ['#3b82f6', '#8b5cf6'];
+          return `linear-gradient(${dir}, ${colors.join(', ')})`;
+        }
+        if (parsed.type === 'rgba' && parsed.value) {
+          return `rgba(${parsed.value}, ${parsed.opacity || 1})`;
+        }
+      }
+      return val;
+    } catch (e) {
+      return val;
+    }
+  }
+  
+  if (typeof val === 'object' && val !== null) {
+    if (val.value) {
+      return val.value;
+    }
+    if (val.type === 'gradient' && val.gradient) {
+      const dir = val.gradient.direction || 'to right';
+      const colors = val.gradient.colors || ['#3b82f6', '#8b5cf6'];
+      return `linear-gradient(${dir}, ${colors.join(', ')})`;
+    }
+    if (val.type === 'rgba' && val.value) {
+      return `rgba(${val.value}, ${val.opacity || 1})`;
+    }
+    return null;
+  }
+  
+  return val;
+};
+
+// ============================================
+// SVG ICONOS INLINE
 // ============================================
 
 const IconDashboard = () => (
@@ -139,115 +218,77 @@ const IconLink = () => (
   </svg>
 );
 
+const IconPaint = () => (
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
+    <path d="M17 4a1 1 0 011 1v1a1 1 0 01-1 1h-1a1 1 0 01-1-1V5a1 1 0 011-1h1z"/>
+  </svg>
+);
+
+
 // ============================================
-// MAPA DE NOMBRES POR DEFECTO (si no hay configuración)
+// MAPA DE NOMBRES POR DEFECTO
 // ============================================
 const DEFAULT_NAMES = {
-  // Sistema
   'dashboard': 'Dashboard',
-  'monitor': 'Monitor SCADA',
-  'interfaces_visuales': 'Interfaces Visuales',
-  'visualizacion': 'Visualización',
-  
-  // Módulos principales
-  'elevadores': 'Elevadores',
-  'alarmas': 'Alarmas',
-  'eventos': 'Eventos',
-  'mantenimiento': 'Mantenimiento',
-  'reportes': 'Reportes',
-  'usuarios': 'Usuarios',
-  'privilegios': 'Privilegios',
-  'configuraciones': 'Configuraciones',
-  'integraciones': 'Integraciones',
-  
-  // Catálogos
-  'catalogo': 'Catálogo',
-  'catalogos': 'Catálogos',
-  'catalogo_alba': 'Catálogo ALBA',
-  'empresas': 'Empresas',
-  'edificios': 'Edificios',
-  'cabinas': 'Cabinas',
-  'controladores': 'Controladores',
-  
-  // Parámetros
-  'parametros_elevador': 'Parámetros IG Elevador',
-  'parametros_cabina': 'Parámetros IG Cabina',
-  
-  // Catálogo - subitems
-  'catalogo_elevadores': 'Elevadores',
-  'catalogo_cabinas': 'Cabinas',
-  'catalogo_controladores': 'Controladores',
-  'catalogo_variables_scada': 'Variables SCADA',
-  'catalogo_usuarios': 'Usuarios',
-  'catalogo_roles': 'Roles',
-  'catalogo_permisos': 'Permisos',
-  
-  // Otros
   'interfaces_graficas': 'Interfaces Gráficas',
   'elevadores_graficos': 'Elevadores Gráficos',
   'cabinas_graficos': 'Cabinas Gráficos',
-  'variables_scada': 'Variables SCADA',
+  'alarmas': 'Alarmas',
+  'eventos': 'Eventos',
+  'mantenimiento': 'Mantenimiento',
   'reportes_grupo': 'Reportes',
   'reportes_alarmas': 'Alarmas',
   'reportes_eventos': 'Eventos',
   'reportes_mantenimiento': 'Mantenimiento',
   'reportes_generales': 'Reportes',
   'reportes_log': 'Log',
-  'interfaces_graficas_catalogo': 'Interfaces Gráficas',
-  'configuracion_ig': 'Administración IG',
-  'vinculacion_parametros': 'Vinculación Parámetros',
-  'ms_parametros': 'MS Parámetros',
+  'catalogo_alba': 'Catálogo ALBA',
+  'empresas': 'Empresas',
+  'edificios': 'Edificios',
+  'elevadores': 'Elevadores',
+  'controladores': 'Controladores',
+  'configuraciones': 'Configuraciones',
+  'usuarios': 'Usuarios',
   'roles': 'Roles',
   'permisos': 'Permisos',
+  'monitor': 'Monitor SCADA',
+  'privilegios': 'Privilegios',
+  'variables_scada': 'Variables SCADA',
+  'integraciones': 'Integraciones',
+  'interfaces_visuales': 'Interfaces Visuales',
+  'interfaces_graficas_catalogo': 'Interfaces Gráficas',
+  'catalogos': 'Catálogos',
+  'elevadores_catalogo': 'Elevadores',
+  'parametros_elevador': 'Parámetros IG Elevador',
+  'cabinas_catalogo': 'Cabinas',
+  'parametros_cabina': 'Parámetros IG Cabina',
+  'usuarios_catalogo': 'Usuarios',
+  'cabinas': 'Cabinas',
+  'ms_parametros': 'Monitor IG',
+  'configuracion_ig': 'Administración IG',
+  'vinculacion_parametros': 'Vinculación Parámetros',
+  'estilos': 'Estilos',
+  'vistas': 'Vistas',
 };
 
 // ============================================
-// DEFINICIÓN DEL MENÚ CON RUTAS CORRECTAS
+// DEFINICIÓN DEL MENÚ
 // ============================================
-
 const ALL_MENU_ITEMS = [
-  // ============================================
-  // 1. DASHBOARD
-  // ============================================
   { clave: 'dashboard', nombre: 'Dashboard', ruta: '/dashboard', icono: IconDashboard },
-
-  // ============================================
-  // 2. INTERFACES GRÁFICAS
-  // ============================================
-  // { 
-  //   clave: 'interfaces_graficas',
-  //   nombre: 'Interfaces Gráficas',
-  //   ruta: '#',
-  //   icono: IconEye,
-  //   children: [
-  //     { clave: 'elevadores_graficos', nombre: 'Elevadores Gráficos', ruta: '/elevadores-graficos', icono: IconElevator },
-  //   ]
-  // },
   { 
-    clave: 'elevadores_graficos',
-    nombre: 'Elevadores Gráficos',
-    ruta: '/elevadores-graficos',
-    icono: IconElevator,
+    clave: 'interfaces_graficas',
+    nombre: 'Interfaces Gráficas',
+    ruta: '#',
+    icono: IconEye,
+    children: [
+      { clave: 'elevadores_graficos', nombre: 'Elevadores Gráficos', ruta: '/elevadores-graficos', icono: IconElevator },
+    ]
   },
-
-  // ============================================
-  // 3. ALARMAS
-  // ============================================
   { clave: 'alarmas', nombre: 'Alarmas', ruta: '/alarmas', icono: IconBell },
-
-  // ============================================
-  // 4. EVENTOS
-  // ============================================
   { clave: 'eventos', nombre: 'Eventos', ruta: '/eventos', icono: IconClock },
-
-  // ============================================
-  // 5. MANTENIMIENTO
-  // ============================================
   { clave: 'mantenimiento', nombre: 'Mantenimiento', ruta: '/mantenimiento', icono: IconTools },
-
-  // ============================================
-  // 6. REPORTES
-  // ============================================
   { 
     clave: 'reportes_grupo',
     nombre: 'Reportes',
@@ -261,27 +302,20 @@ const ALL_MENU_ITEMS = [
       { clave: 'reportes_log', nombre: 'Log', ruta: '/reportes/log', icono: IconClock },
     ]
   },
-
-  // ============================================
-  // 7. CATÁLOGOS
-  // ============================================
   { 
     clave: 'catalogos',
     nombre: 'Catálogos',
     ruta: '#',
     icono: IconBook,
     children: [
-      { clave: 'catalogo_elevadores', nombre: 'Elevadores', ruta: '/elevadores', icono: IconElevator },
+      { clave: 'elevadores_catalogo', nombre: 'Elevadores', ruta: '/catalogo/elevadores', icono: IconElevator },
       { clave: 'parametros_elevador', nombre: 'Parámetros IG Elevador', ruta: '/parametros-elevador', icono: IconMicrochip },
-      { clave: 'catalogo_cabinas', nombre: 'Cabinas', ruta: '/cabinas', icono: IconCabina },
+      { clave: 'cabinas_catalogo', nombre: 'Cabinas', ruta: '/catalogo/cabinas', icono: IconCabina },
       { clave: 'parametros_cabina', nombre: 'Parámetros IG Cabina', ruta: '/parametros-cabina', icono: IconMicrochip },
-      { clave: 'catalogo_usuarios', nombre: 'Usuarios', ruta: '/usuarios', icono: IconUsers },
+      { clave: 'usuarios_catalogo', nombre: 'Usuarios', ruta: '/catalogo/usuarios', icono: IconUsers },
+      // { clave: 'estilos', nombre: 'Estilos', ruta: '/estilos', icono: IconPaint },
     ]
   },
-
-  // ============================================
-  // 8. CATÁLOGO ALBA
-  // ============================================
   { 
     clave: 'catalogo_alba',
     nombre: 'Catálogo ALBA',
@@ -291,8 +325,9 @@ const ALL_MENU_ITEMS = [
       { clave: 'empresas', nombre: 'Empresas', ruta: '/empresas', icono: IconUsers },
       { clave: 'edificios', nombre: 'Edificios', ruta: '/edificios', icono: IconBuilding },
       { clave: 'elevadores', nombre: 'Elevadores', ruta: '/elevadores', icono: IconElevator },
-      { clave: 'catalogo_cabinas', nombre: 'Cabinas', ruta: '/cabinas', icono: IconCabina },
+      { clave: 'cabinas', nombre: 'Cabinas', ruta: '/cabinas', icono: IconCabina },
       { clave: 'configuraciones', nombre: 'Configuraciones', ruta: '/configuraciones', icono: IconCog },
+      { clave: 'estilos', nombre: 'Estilos', ruta: '/estilos', icono: IconPaint },
       { clave: 'usuarios', nombre: 'Usuarios', ruta: '/usuarios', icono: IconUsers },
       { clave: 'roles', nombre: 'Roles', ruta: '/roles', icono: IconUserTag },
       { clave: 'permisos', nombre: 'Permisos', ruta: '/permisos', icono: IconLock },
@@ -300,21 +335,44 @@ const ALL_MENU_ITEMS = [
       { clave: 'monitor', nombre: 'Monitor SCADA', ruta: '/monitor', icono: IconEye },
       { clave: 'variables_scada', nombre: 'Variables SCADA', ruta: '/variables-scada', icono: IconChartBar },
       { clave: 'configuracion_ig', nombre: 'Administración IG', ruta: '/configuracion-ig', icono: IconCog },
-      // { clave: 'vinculacion_parametros', nombre: 'Vinculación Parámetros', ruta: '/vinculacion-parametros', icono: IconLink },
+      { clave: 'vinculacion_parametros', nombre: 'Vinculación Parámetros', ruta: '/vinculacion-parametros', icono: IconLink },
       { clave: 'ms_parametros', nombre: 'MS Parámetros', ruta: '/ms-parametros', icono: IconChartBar },
+      { clave: 'vistas', nombre: 'Vistas', ruta: '/vistas', icono: IconPaint },
     ]
   },
 ];
 
 // ============================================
-// COMPONENTE SIDEBAR - VERSIÓN CON INTERFACES DINÁMICAS
+// COMPONENTE SIDEBAR
 // ============================================
-
 const Sidebar = ({ isOpen, onToggle }) => {
   const location = useLocation();
   const navigate = useNavigate();
   const { logout } = useAuth();
   const { permisos, loading: permisosLoading, userRol } = usePermisos();
+  
+  //  TEMA - USANDO CONTEXTO DIRECTAMENTE
+  const { TEMAS, temaActual } = useSafeTheme();
+  const temaConfig = TEMAS ? TEMAS[temaActual] || TEMAS['default'] : {};
+
+  const isDark = temaActual === 'oscuro';
+
+  //  LOGS PARA DEPURACIÓN
+  // console.log(' [Sidebar] temaConfig.sidebar:', temaConfig.sidebar);
+  // console.log(' [Sidebar] temaConfig.sidebarLogoText:', temaConfig.sidebarLogoText);
+
+  //  EXTRAER VALORES REALES
+  const sidebarBgColor = getBackgroundValue(temaConfig.sidebar) || '#3b82f6';
+  const sidebarTextColor = getRealValue(temaConfig.sidebarText) || '#d1d5db';
+  const sidebarBorderColor = getRealValue(temaConfig.border) || '#e5e7eb';
+  
+  //  NUEVOS ATRIBUTOS - SIDEBAR
+  const sidebarLogoTextColor = getRealValue(temaConfig.sidebarLogoText) || '#ffffff';
+  const sidebarMenuTextColor = getRealValue(temaConfig.sidebarMenuText) || '#d1d5db';
+  const sidebarMenuActiveBgColor = getBackgroundValue(temaConfig.sidebarMenuActiveBg) || 'transparent';
+  const sidebarMenuActiveTextColor = getRealValue(temaConfig.sidebarMenuActiveText) || '#ffffff';
+  const sidebarMenuActiveBorderColor = getRealValue(temaConfig.sidebarMenuActiveBorder) || 'transparent';
+
   const [menuItems, setMenuItems] = useState([]);
   const [expandedMenus, setExpandedMenus] = useState({});
   const [interfacesDinamicas, setInterfacesDinamicas] = useState([]);
@@ -322,33 +380,113 @@ const Sidebar = ({ isOpen, onToggle }) => {
   const [configSistema, setConfigSistema] = useState({});
   const [nombresConfigurados, setNombresConfigurados] = useState({});
 
+  const userRolEfectivo = useMemo(() => {
+    return userRol !== null ? userRol : 1;
+  }, [userRol]);
+
+  const permisosEfectivos = useMemo(() => {
+    if (permisos && permisos.modulos && Object.keys(permisos.modulos).length > 0) {
+      return permisos;
+    }
+    return { modulos: PERMISOS_POR_ROL[1] };
+  }, [permisos]);
+
+  const tienePermiso = useCallback((clave) => {
+    if (!permisosEfectivos || !permisosEfectivos.modulos) {
+      return false;
+    }
+    if (userRolEfectivo === 1) {
+      return true;
+    }
+    const moduloPermisos = permisosEfectivos.modulos[clave];
+    if (!moduloPermisos) {
+      return false;
+    }
+    return moduloPermisos.ver === true;
+  }, [permisosEfectivos, userRolEfectivo]);
+
+  //  Obtener iconos personalizados
+  const [iconosPersonalizados, setIconosPersonalizados] = useState({});
+
+  useEffect(() => {
+    const cargarIconos = async () => {
+      try {
+        const response = await api.get('/configuraciones/iconos-sistema');
+        setIconosPersonalizados(response.data || {});
+      } catch (error) {
+        console.error('Error cargando iconos del sistema:', error);
+      }
+    };
+    cargarIconos();
+  }, []);
+
+  const getIconoModulo = (clave, iconoDefault) => {
+    const config = iconosPersonalizados[clave];
+    if (config) {
+      if (config.tipo === 'imagen') {
+        return { tipo: 'imagen', valor: config.valor };
+      }
+      if (config.tipo === 'emoji' && config.valor) {
+        return { tipo: 'emoji', valor: config.valor };
+      }
+    }
+    return { tipo: 'svg', valor: iconoDefault };
+  };
+
   // Cargar configuraciones
   useEffect(() => {
+    let isMounted = true;
+    
     const cargarConfiguraciones = async () => {
       try {
         const [empresa, sistema] = await Promise.all([
           configuracionService.getGenerales(),
           configuracionService.getSistema()
         ]);
+        
+        if (!isMounted) return;
+        
         setConfigEmpresa(empresa || {});
         setConfigSistema(sistema || {});
         
+        // console.log(' [Sidebar] sistema recibido:', sistema);
+        // console.log(' [Sidebar] sistema.nombre_interfaz_vistas:', sistema.nombre_interfaz_vistas);
+
         const nombres = {};
         Object.keys(DEFAULT_NAMES).forEach(key => {
           const configKey = `nombre_interfaz_${key}`;
-          nombres[key] = sistema[configKey] || DEFAULT_NAMES[key] || key;
+          const valor = sistema[configKey] || DEFAULT_NAMES[key] || key;
+          nombres[key] = valor;
+          
+          //  LOG ESPECÍFICO PARA VISTAS
+          // if (key === 'vistas') {
+            // console.log(' [Sidebar] === DEBUG VISTAS ===');
+            // console.log(' key:', key);
+            // console.log(' configKey:', configKey);
+            // console.log(' sistema[configKey]:', sistema[configKey]);
+            // console.log(' DEFAULT_NAMES[key]:', DEFAULT_NAMES[key]);
+            // console.log(' valor final:', valor);
+            // console.log(' sistema completo:', sistema);
+          // }
         });
+        // console.log(' [Sidebar] nombres final:', nombres);
         setNombresConfigurados(nombres);
       } catch (error) {
-        console.error('Error cargando configuraciones:', error);
+        if (error.response?.status !== 401) {
+          console.error('Error cargando configuraciones:', error);
+        }
         setNombresConfigurados(DEFAULT_NAMES);
       }
     };
+    
     cargarConfiguraciones();
+    
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const getNombreInterfaz = (clave) => {
-    // console.log('🔍 getNombreInterfaz - buscando clave:', clave);
     if (nombresConfigurados[clave]) {
       return nombresConfigurados[clave];
     }
@@ -364,9 +502,9 @@ const Sidebar = ({ isOpen, onToggle }) => {
       try {
         const data = await interfaceVisualService.getAll({ activo: true });
         const items = data.map(iface => ({
-          clave: `interface_${iface.idInterface}`,
+          clave: `interface_${iface.id_interface}`,
           nombre: iface.titulo || iface.nombre,
-          ruta: `/interfaces/${iface.idInterface}`,
+          ruta: `/interfaces/${iface.id_interface}`,
           icono: IconEye,
           es_dinamica: true,
         }));
@@ -378,30 +516,12 @@ const Sidebar = ({ isOpen, onToggle }) => {
     cargarInterfaces();
   }, []);
 
-  const tienePermiso = (clave) => {
-    if (!permisos || !permisos.modulos) {
-      return false;
-    }
-    if (userRol === 1) {
-      return true;
-    }
-    const moduloPermisos = permisos.modulos[clave];
-    if (!moduloPermisos) {
-      return false;
-    }
-    return moduloPermisos.ver === true;
-  };
-
   // Filtrar menú basado en permisos
   useEffect(() => {
-    if (!permisos || !permisos.modulos || userRol === null) {
+    if (userRolEfectivo === null) {
       return;
     }
     
-    // console.log('🔍 Sidebar - userRol:', userRol);
-    // console.log('🔍 Sidebar - Modulos disponibles:', Object.keys(permisos.modulos || {}));
-    
-    // Filtrar items del menú
     const filtered = ALL_MENU_ITEMS.filter(item => {
       const hasPermission = tienePermiso(item.clave);
       
@@ -413,66 +533,15 @@ const Sidebar = ({ isOpen, onToggle }) => {
       return hasPermission;
     });
     
-    // Si hay interfaces dinámicas y el usuario tiene permisos, agregarlas
     if (interfacesDinamicas.length > 0) {
-      // Buscar el grupo "Interfaces Visuales" en Catálogo ALBA
       const catalogoAlba = filtered.find(item => item.clave === 'catalogo_alba');
       if (catalogoAlba && catalogoAlba.children) {
-        // Agregar las interfaces dinámicas como hijos de "Interfaces Visuales" dentro de Catálogo ALBA
-        const interfacesVisualesItem = catalogoAlba.children.find(
-          child => child.clave === 'interfaces_visuales'
-        );
-        
-        if (interfacesVisualesItem) {
-          // Las interfaces dinámicas se mostrarán dentro de "Interfaces Visuales"
-          // No necesitamos hacer nada especial porque ya está en el menú
-        }
+        // Ya está
       }
     }
     
-    // console.log('🔍 Sidebar - Items filtrados:', filtered.map(i => i.clave));
     setMenuItems(filtered);
-  }, [permisos, userRol, interfacesDinamicas]);
-
-  useEffect(() => {
-    const handleNombresActualizados = (event) => {
-      const { nombres } = event.detail;
-      const nuevosNombres = {};
-      Object.keys(nombres).forEach(key => {
-        if (key.startsWith('nombre_interfaz_')) {
-          const shortKey = key.replace('nombre_interfaz_', '');
-          nuevosNombres[shortKey] = nombres[key];
-        }
-      });
-      setNombresConfigurados(prev => ({ ...prev, ...nuevosNombres }));
-    };
-
-    window.addEventListener('nombresInterfazActualizados', handleNombresActualizados);
-    
-    return () => {
-      window.removeEventListener('nombresInterfazActualizados', handleNombresActualizados);
-    };
-  }, []);
-
-  // Si userRol es null, mostrar mensaje de carga
-  if (userRol === null) {
-    return (
-      <aside className={`bg-primary-500 text-gray-300 h-screen fixed left-0 top-0 z-50 flex flex-col transition-all duration-300 ease-in-out ${
-        isOpen ? 'w-60 translate-x-0' : 'w-60 -translate-x-full'
-      }`}>
-        <div className="flex items-center gap-3 py-6 px-4 border-b border-white/10">
-          <span className="text-3xl">🏢</span>
-          <span className="text-xl font-bold text-white">SmartLift</span>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-4"></div>
-            <span className="text-white/50 text-sm">Cargando permisos...</span>
-          </div>
-        </div>
-      </aside>
-    );
-  }
+  }, [permisosEfectivos, userRolEfectivo, interfacesDinamicas]);
 
   const toggleMenu = (clave) => {
     setExpandedMenus(prev => ({
@@ -492,26 +561,20 @@ const Sidebar = ({ isOpen, onToggle }) => {
     navigate('/login');
   };
 
-  // Función para renderizar los hijos de un menú (incluyendo interfaces dinámicas)
+  // Renderizar hijos
   const renderChildren = (children, parentClave) => {
-    // Si es el grupo "interfaces_visuales" dentro de Catálogo ALBA, agregar interfaces dinámicas
     const isInterfacesVisuales = parentClave === 'catalogo_alba' && 
       children.some(child => child.clave === 'interfaces_visuales');
     
-    // Si es Interfaces Visuales, agregar las interfaces dinámicas como hijos adicionales
     if (isInterfacesVisuales) {
       const staticChildren = children.filter(child => child.clave !== 'interfaces_visuales');
       const interfacesVisualesChild = children.find(child => child.clave === 'interfaces_visuales');
       
-      // Crear una lista con el item estático + las interfaces dinámicas
       const allChildren = [...staticChildren];
-      
-      // Si existe el item "Interfaces Visuales" estático, mantenerlo
       if (interfacesVisualesChild) {
         allChildren.push(interfacesVisualesChild);
       }
       
-      // Agregar interfaces dinámicas
       interfacesDinamicas.forEach(iface => {
         allChildren.push({
           clave: iface.clave,
@@ -528,70 +591,296 @@ const Sidebar = ({ isOpen, onToggle }) => {
     return children;
   };
 
+  // Mostrar carga
+  const permisosGuardados = localStorage.getItem('permisos');
+  let hayPermisosLocales = false;
+  if (permisosGuardados) {
+    try {
+      const parsed = JSON.parse(permisosGuardados);
+      if (parsed && parsed.modulos) {
+        hayPermisosLocales = true;
+      }
+    } catch (e) {}
+  }
+
+  if (permisosLoading && !hayPermisosLocales && userRol === null) {
+    return (
+      <aside 
+        style={{ backgroundColor: '#3b82f6', color: '#d1d5db' }}
+        className="h-screen fixed left-0 top-0 z-50 flex flex-col transition-all duration-300 ease-in-out w-60"
+      >
+        <div className="flex items-center gap-3 py-6 px-4 border-b border-white/10">
+          <span className="text-3xl">🏢</span>
+          <span className="text-xl font-bold text-white">SmartLift</span>
+        </div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mb-4"></div>
+            <span className="text-white/50 text-sm">Cargando permisos...</span>
+            <button 
+              onClick={() => window.location.reload()}
+              className="mt-4 text-xs text-white/30 hover:text-white/70 transition-colors block"
+            >
+              🔄 Recargar
+            </button>
+          </div>
+        </div>
+      </aside>
+    );
+  }
+
   return (
     <>
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 lg:hidden transition-opacity duration-300"
           onClick={onToggle}
         />
       )}
 
       <aside 
-        className={`bg-primary-500 text-gray-300 h-screen fixed left-0 top-0 z-50 flex flex-col overflow-y-auto transition-all duration-300 ease-in-out ${
-          isOpen ? 'w-60 translate-x-0' : 'w-60 -translate-x-full'
-        }`}
+        style={{ 
+          backgroundColor: sidebarBgColor,
+          color: sidebarTextColor,
+          borderColor: sidebarBorderColor,
+          scrollbarWidth: 'none',     
+          msOverflowStyle: 'none'     
+        }}
+        className={`
+          h-screen fixed left-0 top-0 z-50 flex flex-col overflow-y-auto
+          transition-all duration-300 ease-in-out
+          ${isOpen ? 'w-64 translate-x-0' : 'w-16 translate-x-0'}
+          shadow-2xl
+        `}
       >
-        {/* Header */}
-        <div className="flex items-center gap-3 py-6 px-4 border-b border-white/10">
-          {configEmpresa.logotipo_sidebar_empresa ? (
-            <img 
-              src={configEmpresa.logotipo_sidebar_empresa} 
-              alt="Logo" 
-              className="h-10 w-10 object-contain rounded-lg"
-            />
-          ) : (
-            <span className="text-3xl">🏢</span>
-          )}
-          <span className={`text-xl font-bold text-white transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-            {configEmpresa.nombre_corto_empresa || 'SmartLift'}
-          </span>
-        </div>
+        {/*  Header - SOLO visible cuando sidebar está expandido */}
+        {isOpen && (
+          <div className={`
+            h-16 flex items-center gap-3 px-3 border-b
+            transition-all duration-300
+          `} style={{ borderColor: sidebarBorderColor }}>
+            {/* Logo en círculo */}
+            <div className={`
+              w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 
+              backdrop-blur-sm overflow-hidden bg-white/7
+            `}>
+              {configEmpresa.logotipo_sidebar_empresa ? (
+                <img 
+                  src={configEmpresa.logotipo_sidebar_empresa} 
+                  alt="Logo" 
+                  className="w-full h-full object-contain p-0-5"
+                />
+              ) : (
+                <span className="text-lg" style={{ color: sidebarLogoTextColor }}>🏢</span>
+              )}
+            </div>
+            
+            {/* Nombre */}
+            <span 
+              className={`
+                text-sm font-bold transition-all duration-300 whitespace-nowrap
+              `}
+              style={{ color: sidebarLogoTextColor }}
+            >
+              {configEmpresa.nombre_corto_empresa || 'SmartLift'}
+            </span>
+            
+            {/* Versión */}
+            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-white/10" style={{ color: sidebarLogoTextColor }}>
+              {configSistema.version_sistema || '1.0'}
+            </span>
+          </div>
+        )}
 
-        {/* Menu */}
-        <nav className="flex-1 mt-4 px-4 space-y-1">
-          {menuItems.map((item) => (
-            <div key={item.clave}>
+        {/*  Logo flotante - SOLO visible cuando sidebar está comprimido */}
+        {!isOpen && (
+          <div className="flex flex-col items-center justify-center pt-2">
+            <div className="w-10 h-10 rounded-xl bg-white/7 backdrop-blur-sm flex items-center justify-center shadow-lg overflow-hidden">
+              {configEmpresa.logotipo_sidebar_empresa ? (
+                <img 
+                  src={configEmpresa.logotipo_sidebar_empresa} 
+                  alt="Logo" 
+                  className="w-full h-full object-contain p-0.5"
+                />
+              ) : (
+                <span className="text-lg">🏢</span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/*  Menú - con iconos personalizados y círculo de fondo */}
+        <nav className={`
+          flex-1 mt-3 px-3 space-y-1 overflow-y-auto
+          ${!isOpen ? 'mt-1' : ''}
+        `}
+        style={{ 
+          scrollbarWidth: 'none',     
+          msOverflowStyle: 'none'     
+        }}
+        >
+          {menuItems.map((item, index) => (
+            <div 
+              key={item.clave}
+              className="transform transition-all duration-300 hover:translate-x-1"
+              style={{
+                animation: `slideIn 0.3s ease-out ${index * 0.05}s both`
+              }}
+            >
               {item.children ? (
-                // Menú con submenús
                 <div>
                   <div
-                    className={`flex items-center px-4 py-3 rounded-lg cursor-pointer transition-all ${
-                      isActive(item.ruta) 
-                        ? 'bg-primary-700 text-white shadow-lg' 
-                        : 'hover:bg-white/10 hover:text-white'
-                    }`}
+                    className={`
+                      flex items-center px-3 py-2.5 rounded-xl cursor-pointer
+                      transition-all duration-300 ease-in-out
+                      group relative overflow-hidden
+                      ${isActive(item.ruta) 
+                        ? 'bg-white/15 shadow-lg' 
+                        : 'hover:bg-white/10'
+                      }
+                    `}
+                    style={{ 
+                      color: isActive(item.ruta) ? sidebarMenuActiveTextColor : sidebarMenuTextColor,
+                      backgroundColor: isActive(item.ruta) ? sidebarMenuActiveBgColor : 'transparent',
+                    }}
                     onClick={() => toggleMenu(item.clave)}
                   >
-                    <item.icono />
-                    <span className={`ml-3 flex-1 text-sm font-medium transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+                    {/* Efecto de gradiente al hacer hover */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                      style={{
+                        background: `linear-gradient(135deg, transparent 40%, ${sidebarMenuActiveBgColor} 100%)`
+                      }}
+                    />
+                    
+                    {/*  ICONO CON CÍRCULO DE FONDO */}
+                    <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 relative z-10">
+                      {(() => {
+                        const iconoData = getIconoModulo(item.clave, item.icono);
+                        const circleBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)';
+                        
+                        if (iconoData.tipo === 'imagen') {
+                          return (
+                            <div 
+                              className="w-8 h-8 rounded-full flex items-center justify-center"
+                              style={{ backgroundColor: circleBg }}
+                            >
+                              <img 
+                                src={iconoData.valor} 
+                                alt={getNombreInterfaz(item.clave)}
+                                className="w-8 h-8 object-contain"
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.parentElement.innerHTML = '<span class="text-base">📄</span>';
+                                }}
+                              />
+                            </div>
+                          );
+                        }
+                        if (iconoData.tipo === 'emoji') {
+                          return (
+                            <div 
+                              className="w-8 h-8 rounded-full flex items-center justify-center"
+                              style={{ backgroundColor: circleBg }}
+                            >
+                              <span className="text-lg leading-none">{iconoData.valor}</span>
+                            </div>
+                          );
+                        }
+                        // SVG por defecto
+                        return (
+                          <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: circleBg }}
+                          >
+                            <item.icono />
+                          </div>
+                        );
+                      })()}
+                    </div>
+
+                    <span className={`
+                      ml-3 flex-1 text-sm font-medium transition-all duration-300 relative z-10
+                      ${isOpen ? 'opacity-100' : 'opacity-0'}
+                    `}>
                       {getNombreInterfaz(item.clave)}
                     </span>
-                    <IconChevronDown className={`${expandedMenus[item.clave] ? 'rotate-180' : ''} transition-transform duration-200`} />
+                    {isOpen && (
+                      <IconChevronDown className={`
+                        transition-transform duration-300 relative z-10
+                        ${expandedMenus[item.clave] ? 'rotate-180' : ''}
+                      `} />
+                    )}
                   </div>
+
+                  {/* Submenús con círculo más pequeño */}
                   {expandedMenus[item.clave] && isOpen && (
-                    <div className="bg-white/5 rounded-lg mt-1 py-1">
-                      {renderChildren(item.children, item.clave).map((child) => (
+                    <div className="ml-4 mt-1 space-y-1 border-l-2 pl-3 overflow-hidden" style={{ borderColor: sidebarBorderColor }}>
+                      {renderChildren(item.children, item.clave).map((child, childIndex) => (
                         <Link
                           key={child.clave}
                           to={child.ruta}
-                          className={`flex items-center px-4 py-2.5 pl-12 text-sm rounded-lg transition-all ${
-                            location.pathname === child.ruta 
-                              ? 'bg-primary-700 text-white' 
-                              : 'hover:bg-white/10 hover:text-white'
-                          }`}
+                          className={`
+                            flex items-center px-3 py-2 rounded-lg text-sm
+                            transition-all duration-200
+                            ${location.pathname === child.ruta 
+                              ? 'bg-white/15' 
+                              : 'hover:bg-white/10'
+                            }
+                            transform hover:translate-x-1
+                          `}
+                          style={{ 
+                            color: location.pathname === child.ruta 
+                              ? sidebarMenuActiveTextColor 
+                              : sidebarMenuTextColor,
+                            backgroundColor: location.pathname === child.ruta 
+                              ? sidebarMenuActiveBgColor 
+                              : 'transparent'
+                          }}
                         >
-                          <child.icono />
+                          {/*  ICONO DE SUBMENÚ CON CÍRCULO MÁS PEQUEÑO */}
+                          <div className="w-6 h-6 flex items-center justify-center flex-shrink-0">
+                            {(() => {
+                              const iconoData = getIconoModulo(child.clave, child.icono);
+                              const circleBg = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.03)';
+                              
+                              if (iconoData.tipo === 'imagen') {
+                                return (
+                                  <div 
+                                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: circleBg }}
+                                  >
+                                    <img 
+                                      src={iconoData.valor} 
+                                      alt={getNombreInterfaz(child.clave)}
+                                      className="w-4 h-4 object-contain"
+                                      onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        e.target.parentElement.innerHTML = '<span class="text-xs">📄</span>';
+                                      }}
+                                    />
+                                  </div>
+                                );
+                              }
+                              if (iconoData.tipo === 'emoji') {
+                                return (
+                                  <div 
+                                    className="w-6 h-6 rounded-full flex items-center justify-center"
+                                    style={{ backgroundColor: circleBg }}
+                                  >
+                                    <span className="text-sm leading-none">{iconoData.valor}</span>
+                                  </div>
+                                );
+                              }
+                              return (
+                                <div 
+                                  className="w-6 h-6 rounded-full flex items-center justify-center"
+                                  style={{ backgroundColor: circleBg }}
+                                >
+                                  <child.icono />
+                                </div>
+                              );
+                            })()}
+                          </div>
                           <span className="ml-3">
                             {child.es_dinamica ? child.nombre : getNombreInterfaz(child.clave)}
                           </span>
@@ -601,61 +890,181 @@ const Sidebar = ({ isOpen, onToggle }) => {
                   )}
                 </div>
               ) : (
-                // Menú normal
                 <Link
                   to={item.ruta}
-                  className={`flex items-center px-4 py-3 rounded-lg transition-all ${
-                    isActive(item.ruta) 
-                      ? 'bg-primary-700 text-white shadow-lg' 
-                      : 'hover:bg-white/10 hover:text-white'
-                  }`}
+                  className={`
+                    flex items-center px-3 py-2.5 rounded-xl
+                    transition-all duration-300 ease-in-out
+                    group relative overflow-hidden
+                    ${isActive(item.ruta) 
+                      ? 'bg-white/15 shadow-lg' 
+                      : 'hover:bg-white/10'
+                    }
+                    transform hover:translate-x-1
+                  `}
+                  style={{ 
+                    color: isActive(item.ruta) ? sidebarMenuActiveTextColor : sidebarMenuTextColor,
+                    backgroundColor: isActive(item.ruta) ? sidebarMenuActiveBgColor : 'transparent',
+                  }}
                 >
-                  <item.icono />
-                  <span className={`ml-3 text-sm font-medium transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
+                  {/* Efecto de gradiente al hacer hover */}
+                  <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+                    style={{
+                      background: `linear-gradient(135deg, transparent 40%, ${sidebarMenuActiveBgColor} 100%)`
+                    }}
+                  />
+                  
+                  {/*  ICONO CON CÍRCULO DE FONDO */}
+                  <div className="w-8 h-8 flex items-center justify-center flex-shrink-0 relative z-10">
+                    {(() => {
+                      const iconoData = getIconoModulo(item.clave, item.icono);
+                      const circleBg = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)';
+                      
+                      if (iconoData.tipo === 'imagen') {
+                        return (
+                          <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: circleBg }}
+                          >
+                            <img 
+                              src={iconoData.valor} 
+                              alt={getNombreInterfaz(item.clave)}
+                              className="w-5 h-5 object-contain"
+                              onError={(e) => {
+                                e.target.style.display = 'none';
+                                e.target.parentElement.innerHTML = '<span class="text-base">📄</span>';
+                              }}
+                            />
+                          </div>
+                        );
+                      }
+                      if (iconoData.tipo === 'emoji') {
+                        return (
+                          <div 
+                            className="w-8 h-8 rounded-full flex items-center justify-center"
+                            style={{ backgroundColor: circleBg }}
+                          >
+                            <span className="text-lg leading-none">{iconoData.valor}</span>
+                          </div>
+                        );
+                      }
+                      return (
+                        <div 
+                          className="w-8 h-8 rounded-full flex items-center justify-center"
+                          style={{ backgroundColor: circleBg }}
+                        >
+                          <item.icono />
+                        </div>
+                      );
+                    })()}
+                  </div>
+
+                  <span className={`
+                    ml-3 text-sm font-medium transition-all duration-300 relative z-10
+                    ${isOpen ? 'opacity-100' : 'opacity-0'}
+                  `}>
                     {getNombreInterfaz(item.clave)}
                   </span>
+                  {isActive(item.ruta) && isOpen && (
+                    <span className="ml-auto w-1.5 h-1.5 rounded-full bg-current relative z-10" />
+                  )}
                 </Link>
               )}
             </div>
           ))}
         </nav>
 
-        {/* Footer */}
-        <div className="pt-4 px-4 border-t border-white/10 flex flex-col gap-2 text-gray-400">
-          <div className="flex items-center justify-between">
+        {/*  Footer con diseño refinado */}
+        <div className={`
+          pt-3 px-3 pb-3 border-t
+          transition-all duration-300
+        `} style={{ borderColor: sidebarBorderColor }}>
+          <div className={`flex items-center ${isOpen ? 'justify-between' : 'justify-center'} px-2 py-2 rounded-xl bg-white/5`}>
+            {/*  Nombre: completo si expandido, solo inicial si comprimido */}
             <div className="flex items-center gap-2">
-              {configSistema.logotipo_sidebar ? (
-                <img 
-                  src={configSistema.logotipo_sidebar} 
-                  alt="Sistema" 
-                  className="h-5 w-5 object-contain"
-                />
-              ) : (
-                <span className="text-sm">🏢</span>
-              )}
-              <span className={`text-xs transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-                {configSistema.nombre_corto_sistema || 'SmartLift'}
+              <span className="text-xs opacity-60" style={{ color: sidebarTextColor }}>
+                {isOpen 
+                  ? (configSistema.nombre_corto_sistema || 'SmartLift')
+                  : (configSistema.nombre_corto_sistema || 'SmartLift').charAt(0).toUpperCase()
+                }
               </span>
             </div>
-            <span className={`text-xs transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-              {configSistema.version_sistema || 'v1.0.0'}
-            </span>
+            {/*  Versión: oculta si está comprimido */}
+            {isOpen && (
+              <span className="text-xs opacity-40" style={{ color: sidebarTextColor }}>
+                {configSistema.version_sistema || 'v1.0'}
+              </span>
+            )}
           </div>
           
-          <div className="flex justify-center">
-            <button 
-              onClick={handleLogout}
-              className="text-white hover:text-gray-300 transition-colors p-1.5 rounded-lg hover:bg-white/10 w-full flex items-center justify-center gap-2 text-sm"
-              title="Cerrar sesión"
-            >
-              <IconSignOut />
-              <span className={`text-xs transition-opacity duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'}`}>
-                Cerrar sesión
-              </span>
-            </button>
-          </div>
+          <button 
+            onClick={handleLogout}
+            className={`
+              mt-2 w-full flex items-center justify-center gap-2 px-3 py-2.5
+              rounded-xl text-sm transition-all duration-300
+              hover:bg-white/10 active:scale-95
+              group relative overflow-hidden
+            `}
+            style={{ color: sidebarTextColor }}
+            title="Cerrar sesión"
+          >
+            {/*  Efecto de gradiente al hacer hover en logout */}
+            <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
+              style={{
+                background: `linear-gradient(135deg, transparent 40%, rgba(239,68,68,0.1) 100%)`
+              }}
+            />
+            <IconSignOut />
+            <span className={`transition-all duration-300 ${isOpen ? 'opacity-100' : 'opacity-0'} relative z-10`}>
+              Cerrar sesión
+            </span>
+          </button>
         </div>
       </aside>
+
+      {/*  CSS para animaciones */}
+      <style>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+      `}</style>
+      <style>{`
+        @keyframes slideIn {
+          from {
+            opacity: 0;
+            transform: translateX(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+        
+        /*  Ocultar scrollbar en Chrome/Safari/Edge */
+        nav::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
+      <style>{`
+        /* ... keyframes slideIn ... */
+        
+        /* Ocultar scrollbar del sidebar completo */
+        aside::-webkit-scrollbar {
+          display: none;
+        }
+        
+        /* Ocultar scrollbar del nav */
+        nav::-webkit-scrollbar {
+          display: none;
+        }
+      `}</style>
     </>
   );
 };

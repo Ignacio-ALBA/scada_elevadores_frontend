@@ -32,8 +32,29 @@ export const parametroCabinaService = {
         return response.data;
     },
 
+    // VERSIÓN SIMPLE - Obtener todos y filtrar en frontend
     getByConfiguracion: async (configId) => {
-        const response = await api.get(`/parametros-cabina/configuracion/${configId}`);
-        return response.data;
+        try {
+            // Primero obtener las cabinas de la configuración
+            const configResponse = await api.get(`/configuracion-ig/${configId}`);
+            const config = configResponse.data;
+            
+            // Si no tiene cabinas, retornar array vacío
+            if (!config.cabinas || config.cabinas.length === 0) {
+                return [];
+            }
+            
+            // Obtener IDs de cabinas
+            const cabinasIds = config.cabinas.map(c => c.id_cabina);
+            
+            // Obtener TODOS los parámetros y filtrar
+            const allParams = await parametroCabinaService.getAll({ activo: true });
+            const filtered = allParams.filter(p => cabinasIds.includes(p.id_cabina));
+            
+            return filtered;
+        } catch (error) {
+            console.warn(`⚠️ Error obteniendo parámetros para configuración ${configId}:`, error.message);
+            return [];
+        }
     },
 };

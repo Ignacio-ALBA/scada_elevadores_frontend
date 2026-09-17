@@ -1,11 +1,10 @@
 // src/context/PermisoContext.jsx
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useCallback } from 'react';
 import api from '../services/api';
 
 const PermisoContext = createContext();
 
-// Definición de permisos por rol (frontend) - FALLBACK si no hay BD
-const PERMISOS_POR_ROL = {
+export const PERMISOS_POR_ROL = {
   1: { // SuperAdmin - TODO
     dashboard: { ver: true, crear: true, editar: true, eliminar: true },
     interfaces_graficas: { ver: true, crear: true, editar: true, eliminar: true },
@@ -43,6 +42,8 @@ const PERMISOS_POR_ROL = {
     usuarios_catalogo: { ver: true, crear: true, editar: true, eliminar: true },
     configuracion_ig: { ver: true, crear: true, editar: true, eliminar: true },
     cabinas: { ver: true, crear: true, editar: true, eliminar: true },
+    estilos: { ver: true, crear: true, editar: true, eliminar: true },
+    iconos: { ver: true, crear: true, editar: true, eliminar: true },
   },
   2: { // Admin - casi todo, sin eliminar
     dashboard: { ver: true, crear: true, editar: true, eliminar: false },
@@ -80,6 +81,8 @@ const PERMISOS_POR_ROL = {
     parametros_cabina: { ver: true, crear: true, editar: true, eliminar: false },
     usuarios_catalogo: { ver: true, crear: true, editar: true, eliminar: false },
     cabinas: { ver: true, crear: true, editar: true, eliminar: false },
+    estilos: { ver: true, crear: true, editar: true, eliminar: false },
+    iconos: { ver: true, crear: true, editar: true, eliminar: false },
   },
   3: { // Supervisor - solo lectura
     dashboard: { ver: true, crear: false, editar: false, eliminar: false },
@@ -95,6 +98,8 @@ const PERMISOS_POR_ROL = {
     reportes_mantenimiento: { ver: true, crear: false, editar: false, eliminar: false },
     reportes_generales: { ver: true, crear: false, editar: false, eliminar: false },
     reportes_log: { ver: true, crear: false, editar: false, eliminar: false },
+    estilos: { ver: true, crear: false, editar: false, eliminar: false },
+    iconos: { ver: true, crear: false, editar: false, eliminar: false },
   },
   4: { // Operador - solo lectura limitada
     dashboard: { ver: true, crear: false, editar: false, eliminar: false },
@@ -102,6 +107,8 @@ const PERMISOS_POR_ROL = {
     cabinas_graficos: { ver: true, crear: false, editar: false, eliminar: false },
     alarmas: { ver: true, crear: false, editar: false, eliminar: false },
     eventos: { ver: true, crear: false, editar: false, eliminar: false },
+    estilos: { ver: true, crear: false, editar: false, eliminar: false },
+    iconos: { ver: true, crear: false, editar: false, eliminar: false },
   },
   5: { // Mantenimiento
     dashboard: { ver: true, crear: false, editar: false, eliminar: false },
@@ -110,6 +117,8 @@ const PERMISOS_POR_ROL = {
     mantenimiento: { ver: true, crear: true, editar: true, eliminar: false },
     reportes_grupo: { ver: true, crear: false, editar: false, eliminar: false },
     reportes_mantenimiento: { ver: true, crear: false, editar: false, eliminar: false },
+    estilos: { ver: true, crear: false, editar: false, eliminar: false },
+    iconos: { ver: true, crear: false, editar: false, eliminar: false },
   },
 };
 
@@ -118,81 +127,131 @@ export const PermisoProvider = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [userRol, setUserRol] = useState(null);
 
-  useEffect(() => {
-    const loadPermisos = async () => {
+  const loadPermisos = useCallback(async () => {
+    // console.log(' [PermisoContext] loadPermisos iniciado');
+    try {
+      setLoading(true);
+      
+      if (window.location.pathname.includes('/login')) {
+        // console.log(' [PermisoContext] En login, omitiendo carga de permisos');
+        setLoading(false);
+        return;
+      }
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        // console.log(' [PermisoContext] No hay token, omitiendo');
+        setLoading(false);
+        return;
+      }
+      
+      const userStr = localStorage.getItem('user');
+      if (!userStr) {
+        console.warn('⚠️ [PermisoContext] No hay user en localStorage');
+        setLoading(false);
+        return;
+      }
+      
+      const user = JSON.parse(userStr);
+      const rolId = user.rol || user.rol_id || user.id_rol || 1;
+      
+      // console.log(' [PermisoContext] user:', user);
+      // console.log(' [PermisoContext] rolId:', rolId);
+      
+      setUserRol(rolId);
+      
+      let modulos = {};
+      let permisosCargados = false;
+      
       try {
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const rolId = user.rol || user.rol_id;
+        const response = await api.get(`/permisos/rol/${rolId}`);
+        // console.log(' [PermisoContext] response desde API:', response.data);
         
-        // console.log('🔍 PermisoContext - user:', user);
-        // console.log('🔍 PermisoContext - rolId:', rolId);
-        
-        if (rolId) {
-          setUserRol(rolId);
-          // console.log}(`🔍 PermisoContext - Cargando permisos para rol: ${rolId}`);
-          
-          try {
-            // const response = await api.get(`/permisos/rol/${rolId}`);
-            // const response = await api.get(`/permisos/rol-contexto/${rolId}`);
-            const response = await api.get(`/permisos/rol/${rolId}`);
-            // console.log('🔍 PermisoContext - Permisos recibidos de BD:', response.data);
-
-            // console.log('🔍 PermisoContext - Permisos recibidos de BD:', response.data);
-            // console.log('🔍 PermisoContext - Módulos disponibles en BD:', Object.keys(response.data.modulos || {}));
-            
-            // Si la BD devuelve permisos, usarlos
-            // Obtener los datos - pueden venir como: response.data.data.data (array paginado), response.data.data (objeto con modulos), o response.data (objeto)
-            const permisosData = response.data?.modulos ? response.data : (response.data?.data?.data || response.data?.data || response.data);
-            if (permisosData && (permisosData.modulos || Array.isArray(permisosData))) {
-              // Si es un array, convertir a estructura con módulos
-              if (Array.isArray(permisosData)) {
-                const modulos = {};
-                permisosData.forEach(permiso => {
-                  if (permiso.modulo_clave) {
-                    modulos[permiso.modulo_clave] = {
-                      ver: permiso.puede_ver,
-                      crear: permiso.puede_crear,
-                      editar: permiso.puede_editar,
-                      eliminar: permiso.puede_eliminar
-                    };
-                  }
-                });
-                setPermisos({ modulos });
-              } else {
-                setPermisos(permisosData);
-              }
-            } else {
-              // Fallback a permisos locales
-              // console.warn('⚠️ PermisoContext - Usando permisos locales (fallback)');
-              console.warn('⚠️ PermisoContext - Usando permisos locales (fallback)');
-              const permisosLocales = PERMISOS_POR_ROL[rolId] || PERMISOS_POR_ROL[1];
-              setPermisos({ modulos: permisosLocales });
+        if (response.data && response.data.modulos) {
+          modulos = response.data.modulos;
+        } else if (Array.isArray(response.data)) {
+          response.data.forEach(permiso => {
+            if (permiso.modulo_clave) {
+              modulos[permiso.modulo_clave] = {
+                ver: permiso.puede_ver || false,
+                crear: permiso.puede_crear || false,
+                editar: permiso.puede_editar || false,
+                eliminar: permiso.puede_eliminar || false
+              };
             }
-          } catch (error) {
-            // console.error('❌ PermisoContext - Error cargando permisos de BD:', error);
-            // Fallback a permisos locales
-            // console.warn('⚠️ PermisoContext - Usando permisos locales (fallback por error)');
-            const permisosLocales = PERMISOS_POR_ROL[rolId] || PERMISOS_POR_ROL[1];
-            setPermisos({ modulos: permisosLocales });
-          }
-        } else {
-          // console.warn('🔍 PermisoContext - Usuario sin rol, usando permisos de SuperAdmin');
-          setUserRol(1);
-          setPermisos({ modulos: PERMISOS_POR_ROL[1] });
+          });
+        }
+        
+        if (Object.keys(modulos).length > 0) {
+          permisosCargados = true;
+          // console.log(' [PermisoContext] Permisos cargados desde API');
+          // console.log(' [PermisoContext] modulos:', modulos);
+          // console.log(' [PermisoContext] ¿Tiene iconos?', modulos.iconos);
         }
       } catch (error) {
-        console.error('❌ PermisoContext - Error general cargando permisos:', error);
-        console.warn('⚠️ PermisoContext - Usando permisos locales (fallback por error)');
-        // setPermisos({ modulos: {} });
-        const permisosLocales = PERMISOS_POR_ROL[rolId] || PERMISOS_POR_ROL[1];
-        setPermisos({ modulos: permisosLocales });
-      } finally {
-        setLoading(false);
+        console.warn('⚠️ [PermisoContext] Error cargando permisos desde API:', error);
+        const cached = localStorage.getItem('permisos');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (parsed && parsed.modulos) {
+              modulos = parsed.modulos;
+              permisosCargados = true;
+              // console.log(' [PermisoContext] Permisos cargados desde caché (fallback)');
+            }
+          } catch (e) {}
+        }
       }
+      
+      if (!permisosCargados) {
+        console.warn('⚠️ [PermisoContext] Usando fallback SuperAdmin');
+        modulos = PERMISOS_POR_ROL[1];
+      }
+      
+      const permisosData = { modulos };
+      setPermisos(permisosData);
+      localStorage.setItem('permisos', JSON.stringify(permisosData));
+      // console.log(' [PermisoContext] Permisos guardados en estado y localStorage');
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('❌ [PermisoContext] Error general:', error);
+      const fallback = { modulos: PERMISOS_POR_ROL[1] };
+      setPermisos(fallback);
+      localStorage.setItem('permisos', JSON.stringify(fallback));
+      setUserRol(1);
+      setLoading(false);
+    }
+  }, []);
+
+  // useEffect principal: cargar permisos al montar el componente
+  useEffect(() => {
+    loadPermisos();
+  }, [loadPermisos]);
+
+  // useEffect adicional: escuchar eventos de login/logout
+  useEffect(() => {
+    const handleLogin = (event) => {
+      // console.log(' [PermisoContext] Evento auth:login recibido!', event.detail);
+      // Recargar permisos después del login
+      loadPermisos();
     };
 
-    loadPermisos();
-  }, []);
+    const handleLogout = () => {
+      // console.log(' [PermisoContext] Evento auth:logout recibido');
+      setPermisos({ modulos: {} });
+      localStorage.removeItem('permisos');
+      setUserRol(null);
+    };
+
+    window.addEventListener('auth:login', handleLogin);
+    window.addEventListener('auth:logout', handleLogout);
+
+    return () => {
+      window.removeEventListener('auth:login', handleLogin);
+      window.removeEventListener('auth:logout', handleLogout);
+    };
+  }, [loadPermisos]);
 
   const tienePermiso = (modulo, accion = 'ver') => {
     if (!permisos || !permisos.modulos) return false;

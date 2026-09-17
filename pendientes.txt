@@ -44,3 +44,25 @@ PS C:\Program Files\PostgreSQL\18\bin> .\pg_dump.exe -U postgres -d scada_elevad
 
 
 admin123
+
+
+
+const token = localStorage.getItem('token');
+fetch('http://localhost:8000/api/permisos/rol/1', {
+  headers: { 'Authorization': `Bearer ${token}` }
+})
+.then(r => r.json())
+.then(data => {
+  console.log('📊 Permisos backend (primer elemento):', data[0]);
+  console.log('📊 Total de permisos:', data.length);
+  console.log('📊 ¿Tiene iconos?', data.some(p => p.modulo_clave === 'iconos'));
+})
+.catch(e => console.error('Error:', e));
+
+const token = localStorage.getItem('token');
+fetch('http://localhost:8000/api/permisos/rol/1', {
+  headers: { 'Authorization': `Bearer ${token}` }
+})
+.then(r => r.json())
+.then(data => console.log('Permisos backend:', data))
+.catch(e => console.error('Error:', e));

@@ -42,15 +42,10 @@ const Mantenimiento = () => {
     fecha_hasta: '',
   });
   
-  // Paginación
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [totalRegistros, setTotalRegistros] = useState(0);
-  
-  // Ordenamiento
   const [sortConfig, setSortConfig] = useState({ key: 'fecha_programada', direction: 'desc' });
-  
-  // Estadísticas
   const [stats, setStats] = useState({
     total: 0,
     programados: 0,
@@ -61,91 +56,78 @@ const Mantenimiento = () => {
 
   const pageTitle = useNombreInterfaz('mantenimiento');
 
-  // ============================================
-  // EFECTOS
-  // ============================================
+  // ✅ Obtener el tema para estilos dinámicos
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
 
   useEffect(() => {
     cargarDatos();
     cargarEstadisticas();
   }, [filters, currentPage, pageSize, sortConfig]);
 
-  // ============================================
-  // FUNCIONES DE CARGA
-  // ============================================
-
   const cargarDatos = async () => {
     setLoading(true);
     try {
-        const params = {
-            skip: (currentPage - 1) * pageSize,
-            limit: pageSize,
-            sort_by: sortConfig.key,
-            sort_dir: sortConfig.direction,
-        };
-        
-        // ✅ Aplicar filtros
-        if (filters.search && filters.search.trim() !== '') {
-            params.search = filters.search.trim();
-        }
-        if (filters.tipo && filters.tipo !== 'todos') {
-            params.tipo = filters.tipo;
-        }
-        if (filters.estado && filters.estado !== 'todos') {
-            params.estado = filters.estado;
-        }
-        if (filters.fecha_desde) {
-            params.fecha_desde = filters.fecha_desde;
-        }
-        if (filters.fecha_hasta) {
-            params.fecha_hasta = filters.fecha_hasta;
-        }
-        
-        // console.log('🔍 Parámetros cargarDatos:', params);
-        const response = await mantenimientoService.getAll(params);
-        setMantenimientos(response.data || []);
-        setTotalRegistros(response.total || 0);
+      const params = {
+        skip: (currentPage - 1) * pageSize,
+        limit: pageSize,
+        sort_by: sortConfig.key,
+        sort_dir: sortConfig.direction,
+      };
+      
+      if (filters.search && filters.search.trim() !== '') {
+        params.search = filters.search.trim();
+      }
+      if (filters.tipo && filters.tipo !== 'todos') {
+        params.tipo = filters.tipo;
+      }
+      if (filters.estado && filters.estado !== 'todos') {
+        params.estado = filters.estado;
+      }
+      if (filters.fecha_desde) {
+        params.fecha_desde = filters.fecha_desde;
+      }
+      if (filters.fecha_hasta) {
+        params.fecha_hasta = filters.fecha_hasta;
+      }
+      
+      const response = await mantenimientoService.getAll(params);
+      setMantenimientos(response.data || []);
+      setTotalRegistros(response.total || 0);
     } catch (error) {
-        console.error('Error cargando mantenimientos:', error);
-        setMessage({ type: 'error', text: 'Error al cargar los mantenimientos' });
+      console.error('Error cargando mantenimientos:', error);
+      setMessage({ type: 'error', text: 'Error al cargar los mantenimientos' });
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   };
 
   const cargarEstadisticas = async () => {
     try {
-        const params = {};
-        
-        // ✅ Enviar TODOS los filtros incluyendo búsqueda
-        if (filters.search && filters.search.trim() !== '') {
-            params.search = filters.search.trim();
-        }
-        if (filters.tipo && filters.tipo !== 'todos') {
-            params.tipo = filters.tipo;
-        }
-        if (filters.estado && filters.estado !== 'todos') {
-            params.estado = filters.estado;
-        }
-        if (filters.fecha_desde) {
-            params.fecha_desde = filters.fecha_desde;
-        }
-        if (filters.fecha_hasta) {
-            params.fecha_hasta = filters.fecha_hasta;
-        }
-        
-        // console.log('🔍 [FRONTEND] Parámetros estadísticas:', params);
-        const data = await mantenimientoService.getEstadisticas(params);
-        // console.log('🔍 [FRONTEND] Estadísticas recibidas:', data);
-        setStats(data);
+      const params = {};
+      
+      if (filters.search && filters.search.trim() !== '') {
+        params.search = filters.search.trim();
+      }
+      if (filters.tipo && filters.tipo !== 'todos') {
+        params.tipo = filters.tipo;
+      }
+      if (filters.estado && filters.estado !== 'todos') {
+        params.estado = filters.estado;
+      }
+      if (filters.fecha_desde) {
+        params.fecha_desde = filters.fecha_desde;
+      }
+      if (filters.fecha_hasta) {
+        params.fecha_hasta = filters.fecha_hasta;
+      }
+      
+      const data = await mantenimientoService.getEstadisticas(params);
+      setStats(data);
     } catch (error) {
-        console.error('Error cargando estadísticas:', error);
+      console.error('Error cargando estadísticas:', error);
     }
   };
-
-  // ============================================
-  // MANEJADORES DE EVENTOS
-  // ============================================
 
   const handleSort = (key) => {
     let direction = 'asc';
@@ -169,14 +151,14 @@ const Mantenimiento = () => {
   const handleDelete = async (id) => {
     if (!window.confirm('¿Estás seguro de eliminar este mantenimiento? Esto cambiará su estado a Cancelado.')) return;
     try {
-        await mantenimientoService.delete(id);
-        setMessage({ type: 'success', text: 'Mantenimiento eliminado correctamente' });
-        await cargarDatos();
-        await cargarEstadisticas();
+      await mantenimientoService.delete(id);
+      setMessage({ type: 'success', text: 'Mantenimiento eliminado correctamente' });
+      await cargarDatos();
+      await cargarEstadisticas();
     } catch (error) {
-        console.error('Error eliminando:', error);
-        const errorMsg = error.response?.data?.detail || 'Error al eliminar el mantenimiento';
-        setMessage({ type: 'error', text: typeof errorMsg === 'string' ? errorMsg : 'Error al eliminar' });
+      console.error('Error eliminando:', error);
+      const errorMsg = error.response?.data?.detail || 'Error al eliminar el mantenimiento';
+      setMessage({ type: 'error', text: typeof errorMsg === 'string' ? errorMsg : 'Error al eliminar' });
     }
     setTimeout(() => setMessage(null), 5000);
   };
@@ -241,21 +223,25 @@ const Mantenimiento = () => {
 
   const totalPages = Math.ceil(totalRegistros / pageSize);
 
-  // ============================================
-  // RENDER
-  // ============================================
-
   return (
     <div className="space-y-6">
       {/* Header */}
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-          <p className="text-text-secondary">Gestiona el mantenimiento de los elevadores</p>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={isDark ? 'text-gray-400' : 'text-text-secondary'}>
+            Gestiona el mantenimiento de los elevadores
+          </p>
         </div>
         <button
           onClick={handleAdd}
-          className="bg-primary-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-700 transition-colors"
+          className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm ${
+            isDark 
+              ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+          }`}
         >
           <IconPlus />
           Nuevo Mantenimiento
@@ -271,20 +257,20 @@ const Mantenimiento = () => {
 
       {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white p-4 rounded-xl shadow-card border-l-4 border-primary-500">
-          <div className="text-text-secondary text-sm">Total</div>
-          <div className="text-2xl font-bold text-primary-500">{stats.total}</div>
+        <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-4 rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} border-l-4 border-primary-500`}>
+          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>Total</div>
+          <div className={`text-2xl font-bold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>{stats.total}</div>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow-card border-l-4 border-blue-500">
-          <div className="text-text-secondary text-sm">Programados</div>
+        <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-4 rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} border-l-4 border-blue-500`}>
+          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>Programados</div>
           <div className="text-2xl font-bold text-blue-600">{stats.programados}</div>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow-card border-l-4 border-yellow-500">
-          <div className="text-text-secondary text-sm">En Progreso</div>
+        <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-4 rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} border-l-4 border-yellow-500`}>
+          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>En Progreso</div>
           <div className="text-2xl font-bold text-yellow-600">{stats.en_progreso}</div>
         </div>
-        <div className="bg-white p-4 rounded-xl shadow-card border-l-4 border-green-500">
-          <div className="text-text-secondary text-sm">Realizados</div>
+        <div className={`${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'} p-4 rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} border-l-4 border-green-500`}>
+          <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>Realizados</div>
           <div className="text-2xl font-bold text-green-600">{stats.realizados}</div>
         </div>
       </div>
@@ -296,6 +282,7 @@ const Mantenimiento = () => {
         onReset={handleResetFilters}
         tipoOptions={tipoOptions}
         estadoOptions={estadoOptions}
+        isDark={isDark}
       />
 
       {/* Tabla */}
@@ -306,19 +293,24 @@ const Mantenimiento = () => {
         loading={loading}
         onSort={handleSort}
         sortConfig={sortConfig}
+        isDark={isDark}
       />
 
       {/* Paginación */}
       {totalRegistros > 0 && (
-        <div className="bg-white rounded-xl shadow-card p-4 flex justify-between items-center flex-wrap gap-2">
+        <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} p-4 flex justify-between items-center flex-wrap gap-2`}>
           <div className="flex items-center gap-2">
-            <span className="text-sm text-text-muted">
+            <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
               Mostrando {mantenimientos.length} de {totalRegistros} mantenimientos
             </span>
             <select
               value={pageSize}
               onChange={handlePageSizeChange}
-              className="px-2 py-1 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className={`px-2 py-1 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-700'
+              }`}
             >
               <option value={5}>5</option>
               <option value={10}>10</option>
@@ -331,17 +323,25 @@ const Mantenimiento = () => {
             <button
               onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-3 py-1 border rounded-lg transition-colors disabled:opacity-50 ${
+                isDark 
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+              }`}
             >
               ◀ Anterior
             </button>
-            <span className="px-3 py-1 text-sm">
+            <span className={`px-3 py-1 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
               Página {currentPage} de {totalPages}
             </span>
             <button
               onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage >= totalPages}
-              className="px-3 py-1 border border-gray-300 rounded-lg hover:bg-gray-100 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className={`px-3 py-1 border rounded-lg transition-colors disabled:opacity-50 ${
+                isDark 
+                  ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                  : 'border-gray-300 text-gray-600 hover:bg-gray-100'
+              }`}
             >
               Siguiente ▶
             </button>
@@ -352,18 +352,19 @@ const Mantenimiento = () => {
       {/* Modal Formulario */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-primary-500">
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
+            <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+              <h2 className={`text-xl font-semibold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
                 {editingMantenimiento ? 'Editar Mantenimiento' : 'Nuevo Mantenimiento'}
               </h2>
-              <button onClick={handleCancel} className="text-gray-400 hover:text-gray-600">✕</button>
+              <button onClick={handleCancel} className={isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}>✕</button>
             </div>
             <MantenimientoForm
               mantenimiento={editingMantenimiento}
               onSave={handleSave}
               onCancel={handleCancel}
               loading={loading}
+              isDark={isDark}
             />
           </div>
         </div>

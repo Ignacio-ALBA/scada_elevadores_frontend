@@ -1,11 +1,11 @@
-import React, { useState, useEffect, useCallback } from 'react';
+// frontend/src/components/pages/Usuarios/Usuarios.jsx
+import React, { useState, useEffect } from 'react';
 import UsuariosTable from './UsuariosTable';
 import UsuarioForm from './UsuariosForm';
 import UsuariosFilters from './UsuariosFilters';
 import PermisoButton from '../../common/PermisoButton';
 import PermisoGuard from '../../common/PermisoGuard';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
-import { usuarioService } from '../../../services/usuarioService';
 
 // SVG Iconos inline
 const IconPlus = () => (
@@ -14,62 +14,130 @@ const IconPlus = () => (
   </svg>
 );
 
+// Datos mock
+const mockUsuarios = [
+  {
+    id: 1,
+    username: 'carlos.admin',
+    nombre: 'Carlos',
+    apellido_paterno: 'Ramírez',
+    apellido_materno: 'González',
+    correo: 'carlos@smartlift.com',
+    rol: 'SuperAdmin',
+    rol_id: 1,
+    activo: true,
+    ultimo_acceso: '2026-07-03T14:30:00',
+    telefono: '55-1111-1111'
+  },
+  {
+    id: 2,
+    username: 'ana.empresa',
+    nombre: 'Ana',
+    apellido_paterno: 'Martínez',
+    apellido_materno: 'López',
+    correo: 'ana@empresa.com',
+    rol: 'Admin',
+    rol_id: 2,
+    activo: true,
+    ultimo_acceso: '2026-07-03T12:15:00',
+    telefono: '33-2222-2222'
+  },
+  {
+    id: 3,
+    username: 'roberto.supervisor',
+    nombre: 'Roberto',
+    apellido_paterno: 'Sánchez',
+    apellido_materno: 'Pérez',
+    correo: 'roberto@smartlift.com',
+    rol: 'Supervisor',
+    rol_id: 3,
+    activo: true,
+    ultimo_acceso: '2026-07-02T16:45:00',
+    telefono: '55-3333-3333'
+  },
+  {
+    id: 4,
+    username: 'maria.operador',
+    nombre: 'María',
+    apellido_paterno: 'García',
+    apellido_materno: 'Ruiz',
+    correo: 'maria@smartlift.com',
+    rol: 'Operador',
+    rol_id: 4,
+    activo: true,
+    ultimo_acceso: '2026-07-02T10:20:00',
+    telefono: '55-4444-4444'
+  },
+  {
+    id: 5,
+    username: 'luis.tecnico',
+    nombre: 'Luis',
+    apellido_paterno: 'Torres',
+    apellido_materno: 'Díaz',
+    correo: 'luis@smartlift.com',
+    rol: 'Mantenimiento',
+    rol_id: 5,
+    activo: false,
+    ultimo_acceso: '2026-06-28T09:00:00',
+    telefono: '55-5555-5555'
+  }
+];
 
+const rolOptions = [
+  { value: 'todos', label: 'Todos los roles' },
+  { value: 1, label: 'SuperAdmin' },
+  { value: 2, label: 'Admin' },
+  { value: 3, label: 'Supervisor' },
+  { value: 4, label: 'Operador' },
+  { value: 5, label: 'Mantenimiento' }
+];
+
+const estadoOptions = [
+  { value: 'todos', label: 'Todos los estados' },
+  { value: true, label: 'Activo' },
+  { value: false, label: 'Inactivo' }
+];
 
 const Usuarios = () => {
-  const [usuarios, setUsuarios] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [usuarios, setUsuarios] = useState(mockUsuarios);
+  const [filteredUsuarios, setFilteredUsuarios] = useState(mockUsuarios);
+  const [loading, setLoading] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [editingUsuario, setEditingUsuario] = useState(null);
-  
-  // Separar estado de control de resultado para evitar loops
-  const [currentPage, setCurrentPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [paginationInfo, setPaginationInfo] = useState({
-    totalCount: 0,
-    totalPages: 0
-  });
   const [filters, setFilters] = useState({
     search: '',
-    activo: undefined
+    rol: 'todos',
+    estado: 'todos'
   });
   const pageTitle = useNombreInterfaz('usuarios');
 
-  // Memorizar la función loadUsuarios para evitar infinite loops
-  const loadUsuarios = useCallback(async (page, size, activo) => {
-    try {
-      setLoading(true);
-      console.log('📥 Cargando usuarios:', { page, limit: size, activo });
-      
-      const response = await usuarioService.getAll({
-        page,
-        limit: size,
-        activo: activo
-      });
+  // ✅ Obtener el tema para estilos dinámicos
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
 
-      console.log('✅ Respuesta usuarios completa:', response);
-      console.log('✅ Usuarios mapeados:', response.data);
-      
-      setUsuarios(response.data || []);
-      // Solo actualizar totalCount y totalPages, no currentPage/pageSize (eso ya está en control)
-      setPaginationInfo({
-        totalCount: response.totalCount,
-        totalPages: response.totalPages
-      });
-    } catch (error) {
-      console.error('❌ Error cargando usuarios:', error);
-      console.error('Error details:', error.response?.data || error.message);
-      setUsuarios([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Cargar usuarios cuando cambien paginación o filtros (sin depender de paginationInfo)
   useEffect(() => {
-    console.log('🔄 useEffect disparado - cargando usuarios');
-    loadUsuarios(currentPage, pageSize, filters.activo);
-  }, [currentPage, pageSize, filters.activo, loadUsuarios]);
+    let result = usuarios;
+
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      result = result.filter(u =>
+        u.username.toLowerCase().includes(searchLower) ||
+        u.nombre.toLowerCase().includes(searchLower) ||
+        u.apellido_paterno.toLowerCase().includes(searchLower) ||
+        u.correo.toLowerCase().includes(searchLower)
+      );
+    }
+
+    if (filters.rol !== 'todos') {
+      result = result.filter(u => u.rol_id === parseInt(filters.rol));
+    }
+
+    if (filters.estado !== 'todos') {
+      result = result.filter(u => u.activo === (filters.estado === 'true'));
+    }
+
+    setFilteredUsuarios(result);
+  }, [usuarios, filters]);
 
   const handleAdd = () => {
     setEditingUsuario(null);
@@ -81,37 +149,33 @@ const Usuarios = () => {
     setShowForm(true);
   };
 
-  const handleDelete = async (id) => {
+  const handleDelete = (id) => {
     if (window.confirm('¿Estás seguro de eliminar este usuario?')) {
-      try {
-        await usuarioService.delete(id);
-        // Resetear a página 1 para recargar la lista
-        setCurrentPage(1);
-      } catch (error) {
-        console.error('Error eliminando usuario:', error);
-        alert('Error al eliminar el usuario');
-      }
+      setUsuarios(usuarios.filter(u => u.id !== id));
     }
   };
 
-  const handleSave = async (usuarioData) => {
-    try {
-      setLoading(true);
+  const handleToggleActive = (id) => {
+    setUsuarios(usuarios.map(u =>
+      u.id === id ? { ...u, activo: !u.activo } : u
+    ));
+  };
+
+  const handleSave = (usuarioData) => {
+    setLoading(true);
+    setTimeout(() => {
       if (editingUsuario) {
-        await usuarioService.update(editingUsuario.id_usuario, usuarioData);
+        setUsuarios(usuarios.map(u =>
+          u.id === editingUsuario.id ? { ...u, ...usuarioData } : u
+        ));
       } else {
-        await usuarioService.create(usuarioData);
+        const newId = Math.max(...usuarios.map(u => u.id)) + 1;
+        setUsuarios([...usuarios, { ...usuarioData, id: newId }]);
       }
       setShowForm(false);
       setEditingUsuario(null);
-      // Resetear a página 1 para recargar la lista
-      setCurrentPage(1);
-    } catch (error) {
-      console.error('Error guardando usuario:', error);
-      alert('Error al guardar el usuario');
-    } finally {
       setLoading(false);
-    }
+    }, 500);
   };
 
   const handleCancel = () => {
@@ -119,26 +183,16 @@ const Usuarios = () => {
     setEditingUsuario(null);
   };
 
-  const handlePageChange = (newPage) => {
-    setCurrentPage(newPage);
-  };
-
-  const handlePageSizeChange = (newSize) => {
-    setPageSize(newSize);
-    setCurrentPage(1); // Reset a página 1 cuando cambia el tamaño
-  };
-
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
-    setCurrentPage(1); // Reset a página 1 cuando cambia filtro
   };
 
   const handleResetFilters = () => {
     setFilters({
       search: '',
-      activo: undefined
+      rol: 'todos',
+      estado: 'todos'
     });
-    setCurrentPage(1);
   };
 
   return (
@@ -146,14 +200,21 @@ const Usuarios = () => {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
-            {/* <h1 className="text-2xl font-bold text-primary-500">Usuarios</h1> */}
-            <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-            <p className="text-text-secondary">Gestiona los usuarios del sistema</p>
+            <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+              {pageTitle}
+            </h1>
+            <p className={isDark ? 'text-gray-400' : 'text-text-secondary'}>
+              Gestiona los usuarios del sistema
+            </p>
           </div>
           <PermisoButton 
             modulo="usuarios" 
             accion="crear"
-            className="bg-primary-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-700 transition-colors"
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm ${
+              isDark 
+                ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+            }`}
             onClick={handleAdd}
           >
             <IconPlus />
@@ -162,81 +223,49 @@ const Usuarios = () => {
         </div>
 
         <UsuariosFilters
-            filters={filters}
-            onFilterChange={handleFilterChange}
-            onReset={handleResetFilters}
+          filters={filters}
+          onFilterChange={handleFilterChange}
+          onReset={handleResetFilters}
+          rolOptions={rolOptions}
+          estadoOptions={estadoOptions}
+          isDark={isDark}
         />
 
         <UsuariosTable
-            usuarios={usuarios}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-            loading={loading}
+          usuarios={filteredUsuarios}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+          onToggleActive={handleToggleActive}
+          loading={loading}
+          isDark={isDark}
         />
 
-        {/* Paginación */}
-        <div className="bg-white rounded-xl shadow-card p-4 flex justify-between items-center">
-          <div className="text-sm text-text-muted">
-            Mostrando {usuarios.length} de {paginationInfo.totalCount} usuarios
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => handlePageChange(currentPage - 1)}
-              disabled={currentPage <= 1}
-              className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              Anterior
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="text-sm">
-                Página {currentPage} de {paginationInfo.totalPages}
-              </span>
-            </div>
-            <button
-              onClick={() => handlePageChange(currentPage + 1)}
-              disabled={currentPage >= paginationInfo.totalPages}
-              className="px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
-            >
-              Siguiente
-            </button>
-            <select
-              value={pageSize}
-              onChange={(e) => handlePageSizeChange(parseInt(e.target.value))}
-              className="px-2 py-2 border border-gray-300 rounded-lg text-sm"
-            >
-              <option value="5">5 por página</option>
-              <option value="10">10 por página</option>
-              <option value="20">20 por página</option>
-              <option value="50">50 por página</option>
-            </select>
-          </div>
-        </div>
-
         {showForm && (
-            <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-                <h2 className="text-xl font-semibold text-primary-500">
-                    {editingUsuario ? 'Editar Usuario' : 'Nuevo Usuario'}
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+            <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
+              <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+                <h2 className={`text-xl font-semibold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+                  {editingUsuario ? 'Editar Usuario' : 'Nuevo Usuario'}
                 </h2>
                 <button
-                    onClick={handleCancel}
-                    className="text-gray-400 hover:text-gray-600"
+                  onClick={handleCancel}
+                  className={isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}
                 >
-                    ✕
+                  ✕
                 </button>
-                </div>
-                <UsuarioForm
+              </div>
+              <UsuarioForm
                 usuario={editingUsuario}
                 onSave={handleSave}
                 onCancel={handleCancel}
                 loading={loading}
                 rolOptions={rolOptions}
-                />
+                isDark={isDark}
+              />
             </div>
-            </div>
+          </div>
         )}
-        </div>
+      </div>
     </PermisoGuard>
   );
 };

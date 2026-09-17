@@ -6,6 +6,8 @@ import { variableScadaService } from '../../../services/variableScadaService';
 import { useDarkMode } from '../../../hooks/useDarkMode';
 import ElevadorDetalle from './ElevadorDetalle';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
+import { useSafeTheme } from '../../../hooks/useSafeTheme';
+import { API_BASE_URL } from '../../../config';
 
 // SVG Iconos
 const IconRefresh = () => (
@@ -29,7 +31,11 @@ const MSParametros = () => {
   const [jsonRaw, setJsonRaw] = useState('');
   const [registrosTabla, setRegistrosTabla] = useState([]);
   const intervalRef = useRef(null);
-  const { isDark } = useDarkMode();
+
+  // Usar localStorage en lugar de useDarkMode
+  const { temaActual } = useSafeTheme();
+  const isDark = temaActual === 'oscuro';
+  
   const pageTitle = useNombreInterfaz('ms_parametros');
 
   // Mapeo de estados
@@ -105,8 +111,8 @@ const MSParametros = () => {
 
   const cargarParametros = async () => {
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5290/api';
-      const response = await fetch(`${API_URL}/parametros-elevador/`, {
+      // const response = await fetch('http://localhost:8000/api/parametros-elevador/', {
+      const response = await fetch(`${API_BASE_URL}/api/parametros-elevador/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -120,7 +126,8 @@ const MSParametros = () => {
     }
 
     try {
-      const response = await fetch(`${API_URL}/parametros-cabina/`, {
+      // const response = await fetch('http://localhost:8000/api/parametros-cabina/', {
+      const response = await fetch(`${API_BASE_URL}/api/parametros-cabina/`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -207,13 +214,12 @@ const MSParametros = () => {
   return (
     <div className={`space-y-6 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
       {/* Header */}
-      <div className={`flex justify-between items-center flex-wrap gap-4 ${isDark ? 'bg-slate-800/50' : 'bg-white'} rounded-xl shadow-card p-4`}>
+      <div className={`flex justify-between items-center flex-wrap gap-4 ${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} p-4`}>
         <div>
-          {/* <h1 className={`text-2xl font-bold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
-            📊 MS Parámetros
-          </h1> */}
-          <h1 className={`text-2xl font-bold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>{pageTitle}</h1>
-          <p className={isDark ? 'text-slate-400' : 'text-text-secondary'}>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={isDark ? 'text-gray-400' : 'text-text-secondary'}>
             Monitoreo en tiempo real de variables SCADA por elevador y cabina
           </p>
         </div>
@@ -223,7 +229,7 @@ const MSParametros = () => {
             onChange={(e) => setPlcSeleccionado(e.target.value)}
             className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm ${
               isDark 
-                ? 'bg-slate-700 border-slate-600 text-gray-200' 
+                ? 'bg-gray-700 border-gray-600 text-gray-200' 
                 : 'bg-white border-gray-300 text-gray-800'
             }`}
           >
@@ -235,16 +241,16 @@ const MSParametros = () => {
           </select>
           <button
             onClick={cargarDatosEmulador}
-            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm ${
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm shadow-sm ${
               isDark 
                 ? 'bg-cyan-600 text-white hover:bg-cyan-700' 
-                : 'bg-primary-500 text-white hover:bg-primary-700'
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
             }`}
           >
             <IconRefresh />
             Actualizar
           </button>
-          <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>
+          <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
             Última actualización: {lastUpdate ? lastUpdate.toLocaleTimeString() : '--'}
           </span>
         </div>
@@ -252,12 +258,12 @@ const MSParametros = () => {
 
       {/* Estado de conexión */}
       {datosEmulador && (
-        <div className={`flex items-center gap-2 ${isDark ? 'bg-slate-800/50' : 'bg-white'} rounded-xl shadow-card px-4 py-2`}>
+        <div className={`flex items-center gap-2 ${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} px-4 py-2`}>
           <div className={`w-3 h-3 rounded-full ${datosEmulador ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span className={`text-sm ${isDark ? 'text-slate-300' : 'text-text-secondary'}`}>
+          <span className={`text-sm ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
             {datosEmulador ? '🟢 Conectado' : '🔴 Desconectado'}
           </span>
-          <span className={`text-sm ml-4 ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>
+          <span className={`text-sm ml-4 ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
             Registros: {datosEmulador?.plc?.registros ? Object.keys(datosEmulador.plc.registros).length : 0}
           </span>
         </div>
@@ -271,7 +277,7 @@ const MSParametros = () => {
       )}
 
       {/* Tabs */}
-      <div className={`border-b ${isDark ? 'border-slate-700' : 'border-gray-200'}`}>
+      <div className={`border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
         <nav className="flex gap-6">
           <button
             onClick={() => setActiveTab('json')}
@@ -281,7 +287,7 @@ const MSParametros = () => {
                   ? 'border-cyan-400 text-cyan-400' 
                   : 'border-primary-500 text-primary-500'
                 : isDark
-                  ? 'border-transparent text-slate-400 hover:text-slate-200'
+                  ? 'border-transparent text-gray-400 hover:text-gray-200'
                   : 'border-transparent text-text-secondary hover:text-primary-500'
             }`}
           >
@@ -295,7 +301,7 @@ const MSParametros = () => {
                   ? 'border-cyan-400 text-cyan-400' 
                   : 'border-primary-500 text-primary-500'
                 : isDark
-                  ? 'border-transparent text-slate-400 hover:text-slate-200'
+                  ? 'border-transparent text-gray-400 hover:text-gray-200'
                   : 'border-transparent text-text-secondary hover:text-primary-500'
             }`}
           >
@@ -309,7 +315,7 @@ const MSParametros = () => {
                   ? 'border-cyan-400 text-cyan-400' 
                   : 'border-primary-500 text-primary-500'
                 : isDark
-                  ? 'border-transparent text-slate-400 hover:text-slate-200'
+                  ? 'border-transparent text-gray-400 hover:text-gray-200'
                   : 'border-transparent text-text-secondary hover:text-primary-500'
             }`}
           >
@@ -322,8 +328,8 @@ const MSParametros = () => {
       <div className="mt-4">
         {/* Pestaña 1: JSON */}
         {activeTab === 'json' && (
-          <div className={`${isDark ? 'bg-slate-800/50' : 'bg-white'} rounded-xl shadow-card overflow-hidden`}>
-            <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'} flex justify-between items-center flex-wrap gap-2`}>
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} overflow-hidden`}>
+            <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center flex-wrap gap-2`}>
               <h3 className={`text-lg font-semibold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
                 Datos JSON del emulador - {plcSeleccionado}
               </h3>
@@ -333,28 +339,32 @@ const MSParametros = () => {
                     navigator.clipboard.writeText(jsonRaw);
                     alert('✅ JSON copiado al portapapeles');
                   }}
-                  className="px-3 py-1 bg-cyan-600 text-white text-sm rounded-lg hover:bg-cyan-700 transition-colors"
+                  className={`px-3 py-1 text-sm rounded-lg transition-colors shadow-sm ${
+                    isDark 
+                      ? 'bg-cyan-600 text-white hover:bg-cyan-700' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+                  }`}
                 >
                   📋 Copiar JSON
                 </button>
                 <button
                   onClick={cargarDatosEmulador}
-                  className={`px-3 py-1 text-sm rounded-lg transition-colors ${
+                  className={`px-3 py-1 text-sm rounded-lg transition-colors shadow-sm ${
                     isDark 
                       ? 'bg-cyan-600 text-white hover:bg-cyan-700' 
-                      : 'bg-primary-500 text-white hover:bg-primary-700'
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
                   }`}
                 >
                   🔄 Actualizar
                 </button>
               </div>
             </div>
-            <div className="overflow-x-auto max-h-[600px] overflow-y-auto bg-slate-900">
-              <pre className="p-4 text-sm font-mono text-green-400 whitespace-pre-wrap">
+            <div className="overflow-x-auto max-h-[600px] overflow-y-auto" style={{ backgroundColor: isDark ? '#0f172a' : '#f8fafc' }}>
+              <pre className={`p-4 text-sm font-mono whitespace-pre-wrap ${isDark ? 'text-green-400' : 'text-gray-800'}`}>
                 {jsonRaw || 'Cargando datos...'}
               </pre>
             </div>
-            <div className={`p-3 border-t text-xs ${isDark ? 'border-slate-700 text-slate-400' : 'border-gray-200 text-text-muted'}`}>
+            <div className={`p-3 border-t text-xs ${isDark ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-text-muted'}`}>
               Actualización automática cada 1 segundo. Última actualización: {lastUpdate ? lastUpdate.toLocaleString() : '-'}
             </div>
           </div>
@@ -362,46 +372,46 @@ const MSParametros = () => {
 
         {/* Pestaña 2: Tabla de Registros */}
         {activeTab === 'tabla_registros' && (
-          <div className={`${isDark ? 'bg-slate-800/50' : 'bg-white'} rounded-xl shadow-card overflow-hidden`}>
-            <div className={`p-4 border-b ${isDark ? 'border-slate-700' : 'border-gray-200'} flex justify-between items-center flex-wrap gap-2`}>
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} overflow-hidden`}>
+            <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center flex-wrap gap-2`}>
               <h3 className={`text-lg font-semibold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
                 Registros Modbus - {plcSeleccionado}
               </h3>
-              <span className={`text-sm ${isDark ? 'text-slate-400' : 'text-text-muted'}`}>
+              <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
                 {registrosTabla.length} registros
               </span>
             </div>
             <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
               <table className="w-full">
-                <thead className={`${isDark ? 'bg-slate-700' : 'bg-gray-50'} sticky top-0`}>
+                <thead className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'} sticky top-0`}>
                   <tr>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-text-secondary'}`}>Dirección</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-text-secondary'}`}>Hex</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-text-secondary'}`}>Nombre</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-text-secondary'}`}>Valor</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-text-secondary'}`}>Acceso</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-text-secondary'}`}>Tipo</th>
-                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-text-secondary'}`}>Descripción</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Dirección</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Hex</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Nombre</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Valor</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Acceso</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Tipo</th>
+                    <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Descripción</th>
                   </tr>
                 </thead>
-                <tbody className={`divide-y ${isDark ? 'divide-slate-700' : 'divide-gray-200'}`}>
+                <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
                   {registrosTabla.map((reg) => (
-                    <tr key={reg.direccion} className={isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50'}>
+                    <tr key={reg.direccion} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
                       <td className={`px-4 py-2 text-sm font-mono ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>{reg.direccion}</td>
-                      <td className={`px-4 py-2 text-sm font-mono ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{reg.hex}</td>
-                      <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>{reg.nombre}</td>
+                      <td className={`px-4 py-2 text-sm font-mono ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{reg.hex}</td>
+                      <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>{reg.nombre}</td>
                       <td className={`px-4 py-2 text-sm font-mono font-bold ${isDark ? 'text-cyan-400' : 'text-cyan-600'}`}>{reg.valor}</td>
                       <td className="px-4 py-2 text-sm">
                         <span className={`px-2 py-0.5 rounded text-xs ${
-                          reg.acceso === 'R' ? 'bg-blue-100 text-blue-800' :
-                          reg.acceso === 'W' ? 'bg-orange-100 text-orange-800' :
-                          'bg-green-100 text-green-800'
+                          reg.acceso === 'R' ? (isDark ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-800') :
+                          reg.acceso === 'W' ? (isDark ? 'bg-orange-900/50 text-orange-300' : 'bg-orange-100 text-orange-800') :
+                          (isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800')
                         }`}>
                           {reg.acceso}
                         </span>
                       </td>
-                      <td className={`px-4 py-2 text-sm ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>{reg.tipo}</td>
-                      <td className={`px-4 py-2 text-sm ${isDark ? 'text-slate-400' : 'text-gray-400'} max-w-xs truncate`}>
+                      <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{reg.tipo}</td>
+                      <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-400' : 'text-gray-400'} max-w-xs truncate`}>
                         {reg.descripcion || '-'}
                       </td>
                     </tr>
@@ -409,7 +419,7 @@ const MSParametros = () => {
                 </tbody>
               </table>
             </div>
-            <div className={`p-3 border-t text-xs ${isDark ? 'border-slate-700 text-slate-400' : 'border-gray-200 text-text-muted'}`}>
+            <div className={`p-3 border-t text-xs ${isDark ? 'border-gray-700 text-gray-400' : 'border-gray-200 text-text-muted'}`}>
               Mostrando {registrosTabla.length} registros. Actualización automática cada 1 segundo.
             </div>
           </div>
@@ -419,7 +429,7 @@ const MSParametros = () => {
         {activeTab === 'tabla' && (
           <div className="grid grid-cols-1 gap-4">
             {codigosElevadores.length === 0 ? (
-              <div className={`${isDark ? 'bg-slate-800/50 text-slate-400' : 'bg-white text-text-muted'} rounded-xl shadow-card p-8 text-center`}>
+              <div className={`${isDark ? 'bg-gray-800 text-gray-400' : 'bg-white text-text-muted'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} p-8 text-center`}>
                 No hay variables SCADA configuradas para este PLC
               </div>
             ) : (

@@ -1,11 +1,18 @@
 // frontend/src/config/index.js
 // Configuración centralizada para toda la aplicación
 
+// Configuración centralizada - Usa VITE_API_URL del .env (no hardcodes)
 export const APP_CONFIG = {
   name: 'SmartLift',
   version: '1.0.0',
-  apiBaseUrl: import.meta.env.VITE_API_URL || 'http://localhost:5290/api',
+  apiBaseUrl: import.meta.env.VITE_API_URL,
+  dashboardInterval: import.meta.env.VITE_DASHBOARD_INTERVAL || 15000,
 };
+
+// Validar que la URL está configurada
+if (!APP_CONFIG.apiBaseUrl) {
+  throw new Error('VITE_API_URL no está configurado en .env');
+}
 
 // Configuración de columnas para tablas (dinámicas)
 export const TABLE_CONFIG = {

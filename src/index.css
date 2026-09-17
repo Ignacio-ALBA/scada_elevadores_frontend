@@ -2,6 +2,20 @@
 @tailwind components;
 @tailwind utilities;
 
+/* frontend/src/index.css - Al final del archivo */
+:root {
+  /* Variables por defecto */
+  --theme-sidebar: #1e293b;
+  --theme-sidebar-text: #cbd5e1;
+  --theme-sidebar-active: #1e293b;
+  --theme-topbar: #1e293b;
+  --theme-topbar-text: #ffffff;
+  --theme-background: #f1f5f9;
+  --theme-card: #ffffff;
+  --theme-text: #1e293b;
+  --theme-text-secondary: #64748b;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -304,4 +318,43 @@ body {
 }
 .text-dark-muted {
   color: #64748b;
+}
+
+/* Animación para el drawer lateral */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* Scrollbar personalizado para el modal */
+.modal-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Modo oscuro - scrollbar */
+.dark .modal-scrollbar::-webkit-scrollbar-thumb {
+  background: #475569;
+}
+
+.dark .modal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748b;
 }

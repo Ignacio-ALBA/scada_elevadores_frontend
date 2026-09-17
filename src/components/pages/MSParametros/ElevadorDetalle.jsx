@@ -36,7 +36,7 @@ const ElevadorDetalle = ({
 
   // Determinar estado del elevador
   let estadoElevador = 'Desconocido';
-  let estadoColor = isDark ? 'bg-slate-700 text-slate-300' : 'bg-gray-100 text-gray-800';
+  let estadoColor = isDark ? 'bg-gray-700 text-gray-300' : 'bg-gray-100 text-gray-800';
 
   const estadoVar = variablesElevador.find(v =>
     v.nombre.toLowerCase().includes('estado')
@@ -89,15 +89,15 @@ const ElevadorDetalle = ({
   }
 
   // Clases condicionales
-  const bgClase = isDark ? 'bg-slate-800/80 border-slate-700' : 'bg-white border-gray-200';
+  const bgClase = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
   const textClase = isDark ? 'text-gray-200' : 'text-gray-800';
-  const textSecundario = isDark ? 'text-slate-400' : 'text-gray-500';
-  const textMuted = isDark ? 'text-slate-500' : 'text-gray-400';
-  const borderClase = isDark ? 'border-slate-700' : 'border-gray-200';
-  const hoverBg = isDark ? 'hover:bg-slate-700/50' : 'hover:bg-gray-50';
-  const inputBg = isDark ? 'bg-slate-700 border-slate-600 text-gray-200' : 'bg-gray-50 border-gray-200 text-gray-800';
-  const cardBg = isDark ? 'bg-slate-700/50' : 'bg-gray-50';
-  const subCardBg = isDark ? 'bg-slate-800/50' : 'bg-white';
+  const textSecundario = isDark ? 'text-gray-400' : 'text-gray-500';
+  const textMuted = isDark ? 'text-gray-500' : 'text-gray-400';
+  const borderClase = isDark ? 'border-gray-700' : 'border-gray-200';
+  const hoverBg = isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-50';
+  const inputBg = isDark ? 'bg-gray-700 border-gray-600 text-gray-200' : 'bg-gray-50 border-gray-200 text-gray-800';
+  const cardBg = isDark ? 'bg-gray-700/50' : 'bg-gray-50';
+  const subCardBg = isDark ? 'bg-gray-800/50' : 'bg-white';
 
   return (
     <div className={`rounded-xl shadow-card overflow-hidden border ${bgClase}`}>
@@ -142,7 +142,7 @@ const ElevadorDetalle = ({
 
       {/* Contenido expandido */}
       {isExpandido && (
-        <div className={`p-4 space-y-4 ${isDark ? 'bg-slate-800/30' : 'bg-gray-50'}`}>
+        <div className={`p-4 space-y-4 ${isDark ? 'bg-gray-800/30' : 'bg-gray-50'}`}>
           {/* Variables del elevador */}
           {variablesElevador.length > 0 && (
             <div>

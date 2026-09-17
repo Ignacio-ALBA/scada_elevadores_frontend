@@ -1,55 +1,18 @@
 // frontend/src/components/pages/Alarmas/AlarmasTable.jsx
-import React, { useState } from 'react';
+import React from 'react';
 
 const AlarmasTable = ({ 
-  alarmas = [], 
-  loading = false, 
+  alarmas, 
+  loading, 
   onConfirmar, 
   onResolver, 
-  onDelete,
-  onEdit 
+  onDelete, 
+  onEdit,
+  isDark = false
 }) => {
-  // Mostrar mensaje si no hay datos después del filtro
-  if (!loading && alarmas.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-card overflow-hidden">
-        <div className="text-center py-12">
-          <div className="text-5xl mb-4">🔍</div>
-          <p className="text-text-muted text-lg">No hay alarmas que coincidan con los filtros</p>
-          <p className="text-text-muted text-sm mt-1">Prueba ajustando los criterios de búsqueda</p>
-        </div>
-      </div>
-    );
-  }
-
-  const [confirmando, setConfirmando] = useState(null);
-  const [resolviendo, setResolviendo] = useState(null);
-
-  const alarmasList = Array.isArray(alarmas) ? alarmas : [];
-
-  if (loading) {
-    return (
-      <div className="bg-white rounded-xl shadow-card overflow-hidden">
-        <div className="flex justify-center py-8">
-          <span className="text-primary-500">Cargando alarmas...</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (alarmasList.length === 0) {
-    return (
-      <div className="bg-white rounded-xl shadow-card overflow-hidden">
-        <div className="text-center py-8 text-text-muted">
-          No hay alarmas para mostrar
-        </div>
-      </div>
-    );
-  }
-
-  const formatDate = (timestamp) => {
-    if (!timestamp) return '-';
-    return new Date(timestamp).toLocaleString('es-MX', {
+  const formatDate = (date) => {
+    if (!date) return '-';
+    return new Date(date).toLocaleString('es-MX', {
       day: '2-digit',
       month: '2-digit',
       year: 'numeric',
@@ -59,185 +22,161 @@ const AlarmasTable = ({
   };
 
   const getPrioridadColor = (prioridad) => {
-    const colors = {
+    const colores = {
       alta: 'bg-red-100 text-red-800',
       media: 'bg-yellow-100 text-yellow-800',
       baja: 'bg-green-100 text-green-800'
     };
-    return colors[prioridad?.toLowerCase()] || 'bg-gray-100 text-gray-800';
+    if (isDark) {
+      return {
+        alta: 'bg-red-900/50 text-red-300',
+        media: 'bg-yellow-900/50 text-yellow-300',
+        baja: 'bg-green-900/50 text-green-300'
+      }[prioridad] || 'bg-gray-700 text-gray-300';
+    }
+    return colores[prioridad] || 'bg-gray-100 text-gray-800';
   };
 
-  const handleConfirmar = async (id) => {
-    if (!window.confirm('¿Confirmar esta alarma?')) return;
-    setConfirmando(id);
-    try {
-      await onConfirmar(id);
-    } catch (error) {
-      console.error('Error confirmando alarma:', error);
-    } finally {
-      setConfirmando(null);
-    }
+  const getEstadoLabel = (alarma) => {
+    if (alarma.resuelta) return 'Resuelta';
+    if (alarma.confirmada) return 'Confirmada';
+    return 'Activa';
   };
 
-  const handleResolver = async (id) => {
-    if (!window.confirm('¿Resolver esta alarma?')) return;
-    setResolviendo(id);
-    try {
-      await onResolver(id);
-    } catch (error) {
-      console.error('Error resolviendo alarma:', error);
-    } finally {
-      setResolviendo(null);
+  const getEstadoColor = (alarma) => {
+    if (alarma.resuelta) {
+      return isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800';
     }
+    if (alarma.confirmada) {
+      return isDark ? 'bg-blue-900/50 text-blue-300' : 'bg-blue-100 text-blue-800';
+    }
+    return isDark ? 'bg-red-900/50 text-red-300' : 'bg-red-100 text-red-800';
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('¿Eliminar esta alarma? Esta acción no se puede deshacer.')) return;
-    try {
-      await onDelete(id);
-    } catch (error) {
-      console.error('Error eliminando alarma:', error);
-    }
-  };
+  if (loading) {
+    return (
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-card p-8 flex justify-center`}>
+        <span className={isDark ? 'text-gray-400' : 'text-primary-500'}>Cargando alarmas...</span>
+      </div>
+    );
+  }
 
   return (
-    <div className="bg-white rounded-xl shadow-card overflow-hidden">
+    <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} overflow-hidden`}>
       <div className="overflow-x-auto">
         <table className="w-full">
-          <thead className="bg-gray-50 border-b border-gray-200">
+          <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                Fecha/Hora
+              <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
+                Fecha
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Elevador
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Mensaje
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Prioridad
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-4 py-3 text-left text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Estado
               </th>
-              <th className="px-6 py-3 text-center text-xs font-medium text-text-secondary uppercase tracking-wider">
+              <th className={`px-4 py-3 text-center text-xs font-medium uppercase tracking-wider ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                 Acciones
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200">
-            {alarmasList.map((alarma) => {
-              const id = alarma.id || alarma.id_alarma;
-              const isConfirming = confirmando === id;
-              const isResolving = resolviendo === id;
-              const estaResuelta = alarma.resuelta === true;
-              const estaConfirmada = alarma.confirmada === true;
-
-              return (
-                <tr key={id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm">
-                    {formatDate(alarma.timestamp)}
+          <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
+            {alarmas.length === 0 ? (
+              <tr>
+                <td colSpan="6" className={`px-4 py-8 text-center ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
+                  No hay alarmas registradas
+                </td>
+              </tr>
+            ) : (
+              alarmas.map((alarma) => (
+                <tr key={alarma.id || alarma.id_alarma} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                  <td className={`px-4 py-3 text-sm ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
+                    {formatDate(alarma.timestamp || alarma.created_at)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="font-medium text-primary-500 text-sm">
-                      {alarma.codigo_elevador || '-'}
-                    </div>
-                    <div className="text-xs text-text-muted">
+                  <td className={`px-4 py-3 text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                    <div className="font-medium">{alarma.codigo_elevador || '-'}</div>
+                    <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
                       {alarma.elevador_nombre || ''}
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-sm max-w-xs truncate">
+                  <td className={`px-4 py-3 text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                     {alarma.mensaje || '-'}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs ${getPrioridadColor(alarma.prioridad)}`}>
-                      {alarma.prioridad || 'media'}
+                  <td className="px-4 py-3 text-sm">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPrioridadColor(alarma.prioridad)}`}>
+                      {alarma.prioridad || 'Media'}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 py-1 rounded-full text-xs ${
-                      estaResuelta ? 'bg-green-100 text-green-800' :
-                      estaConfirmada ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
-                      {estaResuelta ? '✅ Resuelta' :
-                       estaConfirmada ? '⏳ Confirmada' : '🔴 Activa'}
+                  <td className="px-4 py-3 text-sm">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getEstadoColor(alarma)}`}>
+                      {getEstadoLabel(alarma)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="flex justify-center gap-2 flex-wrap">
-                      {/* Editar */}
+                  <td className="px-4 py-3 text-center">
+                    <div className="flex justify-center gap-1 flex-wrap">
+                      {!alarma.resuelta && (
+                        <>
+                          {!alarma.confirmada && (
+                            <button
+                              onClick={() => onConfirmar(alarma.id || alarma.id_alarma)}
+                              className={`px-2 py-1 text-xs rounded transition-colors ${
+                                isDark 
+                                  ? 'bg-blue-900/50 text-blue-300 hover:bg-blue-800/50' 
+                                  : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
+                              }`}
+                            >
+                              Confirmar
+                            </button>
+                          )}
+                          <button
+                            onClick={() => onResolver(alarma.id || alarma.id_alarma)}
+                            className={`px-2 py-1 text-xs rounded transition-colors ${
+                              isDark 
+                                ? 'bg-green-900/50 text-green-300 hover:bg-green-800/50' 
+                                : 'bg-green-100 text-green-700 hover:bg-green-200'
+                            }`}
+                          >
+                            Resolver
+                          </button>
+                          <button
+                            onClick={() => onEdit(alarma)}
+                            className={`px-2 py-1 text-xs rounded transition-colors ${
+                              isDark 
+                                ? 'bg-cyan-900/50 text-cyan-300 hover:bg-cyan-800/50' 
+                                : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                            }`}
+                          >
+                            Editar
+                          </button>
+                        </>
+                      )}
                       <button
-                        onClick={() => onEdit && onEdit(alarma)}
-                        disabled={estaResuelta}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors disabled:opacity-40"
-                        title={estaResuelta ? 'No se puede editar una alarma resuelta' : 'Editar alarma'}
+                        onClick={() => onDelete(alarma.id || alarma.id_alarma)}
+                        className={`px-2 py-1 text-xs rounded transition-colors ${
+                          isDark 
+                            ? 'bg-red-900/50 text-red-300 hover:bg-red-800/50' 
+                            : 'bg-red-100 text-red-700 hover:bg-red-200'
+                        }`}
                       >
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                        </svg>
+                        Eliminar
                       </button>
-
-                      {/* Confirmar */}
-                      {!estaConfirmada && !estaResuelta && (
-                        <button
-                          onClick={() => handleConfirmar(id)}
-                          disabled={isConfirming}
-                          className="p-1.5 text-blue-500 hover:bg-blue-50 rounded transition-colors disabled:opacity-40"
-                          title="Confirmar alarma"
-                        >
-                          {isConfirming ? (
-                            <span className="inline-block w-4 h-4 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm3.707 5.707a1 1 0 01-1.414 0L9 11.586 7.707 10.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4a1 1 0 010 1.414z"/>
-                            </svg>
-                          )}
-                        </button>
-                      )}
-
-                      {/* Resolver */}
-                      {estaConfirmada && !estaResuelta && (
-                        <button
-                          onClick={() => handleResolver(id)}
-                          disabled={isResolving}
-                          className="p-1.5 text-green-500 hover:bg-green-50 rounded transition-colors disabled:opacity-40"
-                          title="Resolver alarma"
-                        >
-                          {isResolving ? (
-                            <span className="inline-block w-4 h-4 border-2 border-green-500 border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm3.707 5.707a1 1 0 01-1.414 0L9 11.586 7.707 10.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4a1 1 0 010 1.414z"/>
-                            </svg>
-                          )}
-                        </button>
-                      )}
-
-                      {/* Eliminar */}
-                      {!estaResuelta && (
-                        <button
-                          onClick={() => handleDelete(id)}
-                          className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                          title="Eliminar alarma"
-                        >
-                          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                            <path d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"/>
-                          </svg>
-                        </button>
-                      )}
-
-                      {estaResuelta && (
-                        <span className="text-xs text-green-500 font-medium">Completada</span>
-                      )}
                     </div>
                   </td>
                 </tr>
-              );
-            })}
+              ))
+            )}
           </tbody>
         </table>
+      </div>
+      <div className={`px-4 py-3 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border-t text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
+        Mostrando {alarmas.length} alarmas
       </div>
     </div>
   );

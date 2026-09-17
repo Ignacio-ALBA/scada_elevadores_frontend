@@ -6,6 +6,8 @@ import { elevadorService } from '../../../services/elevadorService';
 import { variableScadaService } from '../../../services/variableScadaService';
 import { usePermisos } from '../../../context/PermisoContext';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
+import { useSafeTheme } from '../../../hooks/useSafeTheme';
+import { API_BASE_URL } from '../../../config';
 
 const ParametrosCabina = () => {
   const [elevadores, setElevadores] = useState([]);
@@ -22,6 +24,111 @@ const ParametrosCabina = () => {
   const [viewMode, setViewMode] = useState('cards');
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
   const pageTitle = useNombreInterfaz('parametros_cabina');
+
+  //  Estado para configuración de colores
+  const [colorConfig, setColorConfig] = useState({
+    color_inferior: '#818cf8',      // indigo-400
+    color_superior: '#4f46e5',      // indigo-600
+    texto_inferior: '#1e293b',      // slate-800
+    texto_superior: '#ffffff',      // white
+  });
+
+  //  Cargar configuración de colores desde la base de datos
+  useEffect(() => {
+    cargarConfiguracionColores();
+  }, []);
+
+  const cargarConfiguracionColores = async () => {
+    try {
+      // const response = await fetch('http://localhost:8000/api/configuraciones/colores-parametros-cabina', {
+      const response = await fetch(`${API_BASE_URL}/api/configuraciones/colores-parametros-cabina`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        if (data) {
+          setColorConfig({
+            color_inferior: data.color_inferior || '#818cf8',
+            color_superior: data.color_superior || '#4f46e5',
+            texto_inferior: data.texto_inferior || '#1e293b',
+            texto_superior: data.texto_superior || '#ffffff',
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error cargando configuración de colores:', error);
+    }
+  };
+
+  //  Guardar configuración de colores
+  const guardarConfiguracionColores = async () => {
+    try {
+      // const response = await fetch('http://localhost:8000/api/configuraciones/colores-parametros-cabina', {
+      const response = await fetch(`${API_BASE_URL}/api/configuraciones/colores-parametros-cabina`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(colorConfig)
+      });
+      if (response.ok) {
+        setMessage({ type: 'success', text: 'Configuración de colores guardada correctamente' });
+        setTimeout(() => setMessage(null), 3000);
+      }
+    } catch (error) {
+      console.error('Error guardando configuración de colores:', error);
+      setMessage({ type: 'error', text: 'Error al guardar la configuración' });
+      setTimeout(() => setMessage(null), 3000);
+    }
+  };
+
+  //  Función para generar color de fondo interpolado
+  const getCardColor = (index, total) => {
+    const ratio = total > 1 ? index / (total - 1) : 0;
+    const colorInferior = colorConfig.color_inferior;
+    const colorSuperior = colorConfig.color_superior;
+    
+    // Interpolación simple de colores
+    const r1 = parseInt(colorInferior.slice(1,3), 16);
+    const g1 = parseInt(colorInferior.slice(3,5), 16);
+    const b1 = parseInt(colorInferior.slice(5,7), 16);
+    const r2 = parseInt(colorSuperior.slice(1,3), 16);
+    const g2 = parseInt(colorSuperior.slice(3,5), 16);
+    const b2 = parseInt(colorSuperior.slice(5,7), 16);
+    
+    const r = Math.round(r1 + (r2 - r1) * ratio);
+    const g = Math.round(g1 + (g2 - g1) * ratio);
+    const b = Math.round(b1 + (b2 - b1) * ratio);
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
+  //  Función para generar color de texto interpolado
+  const getTextColor = (index, total) => {
+    const ratio = total > 1 ? index / (total - 1) : 0;
+    const colorInferior = colorConfig.texto_inferior;
+    const colorSuperior = colorConfig.texto_superior;
+    
+    const r1 = parseInt(colorInferior.slice(1,3), 16);
+    const g1 = parseInt(colorInferior.slice(3,5), 16);
+    const b1 = parseInt(colorInferior.slice(5,7), 16);
+    const r2 = parseInt(colorSuperior.slice(1,3), 16);
+    const g2 = parseInt(colorSuperior.slice(3,5), 16);
+    const b2 = parseInt(colorSuperior.slice(5,7), 16);
+    
+    const r = Math.round(r1 + (r2 - r1) * ratio);
+    const g = Math.round(g1 + (g2 - g1) * ratio);
+    const b = Math.round(b1 + (b2 - b1) * ratio);
+    
+    return `rgb(${r}, ${g}, ${b})`;
+  };
+
+  //  Obtener el tema para estilos dinámicos
+  const { temaActual } = useSafeTheme();
+  const isDark = temaActual === 'oscuro';
 
   const [formData, setFormData] = useState({
     id_cabina: '',
@@ -40,11 +147,6 @@ const ParametrosCabina = () => {
     orden: 0,
     activo: true,
   });
-
-  const COLOR_PALETTE = [
-    'bg-indigo-100', 'bg-indigo-200', 'bg-indigo-300', 'bg-indigo-400',
-    'bg-indigo-500', 'bg-indigo-600', 'bg-indigo-700', 'bg-indigo-800'
-  ];
 
   useEffect(() => {
     cargarDatos();
@@ -71,29 +173,6 @@ const ParametrosCabina = () => {
     }
   };
 
-  const getColor = (index) => {
-    return COLOR_PALETTE[index % COLOR_PALETTE.length];
-  };
-
-  const getCintilloColor = (bgColor) => {
-    const colorMap = {
-      'bg-indigo-100': 'bg-indigo-300',
-      'bg-indigo-200': 'bg-indigo-400',
-      'bg-indigo-300': 'bg-indigo-500',
-      'bg-indigo-400': 'bg-indigo-600',
-      'bg-indigo-500': 'bg-indigo-700',
-      'bg-indigo-600': 'bg-indigo-800',
-      'bg-indigo-700': 'bg-indigo-900',
-      'bg-indigo-800': 'bg-indigo-950',
-    };
-    return colorMap[bgColor] || 'bg-indigo-500';
-  };
-
-  // Filtrar cabinas por elevador seleccionado
-  const cabinasPorElevador = (elevadorId) => {
-    return cabinas.filter(c => c.id_elevador === elevadorId || c.id_elevador === elevadorId);
-  };
-
   const handleSelectCabina = (cabina, color) => {
     setSelectedCabina(cabina);
     setSelectedColor(color);
@@ -102,10 +181,10 @@ const ParametrosCabina = () => {
 
   const handleSelectElevador = (elevador) => {
     setSelectedElevador(elevador);
-    // Seleccionar la primera cabina de ese elevador automáticamente
     const cabinasDelElevador = cabinas.filter(c => c.id_elevador === elevador.id_elevador || c.id_elevador === elevador.id);
     if (cabinasDelElevador.length > 0) {
-      const color = getColor(elevadores.findIndex(e => e.id_elevador === elevador.id_elevador || e.id === elevador.id));
+      const index = elevadores.findIndex(e => e.id_elevador === elevador.id_elevador || e.id === elevador.id);
+      const color = getCardColor(index, elevadores.length);
       setSelectedCabina(cabinasDelElevador[0]);
       setSelectedColor(color);
       setViewMode('tabs');
@@ -237,45 +316,45 @@ const ParametrosCabina = () => {
     return cabina ? cabina.nombre : '-';
   };
 
-  // Parámetros filtrados por cabina seleccionada
   const parametrosFiltrados = parametros.filter(
     p => p.id_cabina === selectedCabina?.id_cabina || p.id_cabina === selectedCabina?.id
   );
 
+  // ✅ Renderizar tarjetas con colores dinámicos
   const renderCardView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
       {elevadores.map((elevador, elevadorIndex) => {
         const cabinasDelElevador = cabinas.filter(
           c => c.id_elevador === elevador.id_elevador || c.id_elevador === elevador.id
         );
-        const color = getColor(elevadorIndex);
+        const cardBg = getCardColor(elevadorIndex, elevadores.length);
+        const textColor = getTextColor(elevadorIndex, elevadores.length);
         const isSelected = selectedElevador?.id_elevador === elevador.id_elevador || 
                           selectedElevador?.id === elevador.id;
 
         return (
           <div
             key={elevador.id_elevador || elevador.id}
-            className={`${color} rounded-xl shadow-card overflow-hidden border-2 transition-all cursor-pointer hover:shadow-lg ${
-              isSelected ? 'border-primary-500 ring-2 ring-primary-300' : 'border-transparent hover:border-gray-300'
-            }`}
+            className="rounded-xl shadow-card overflow-hidden border-2 transition-all cursor-pointer hover:shadow-lg"
+            style={{ backgroundColor: cardBg }}
             onClick={() => handleSelectElevador(elevador)}
           >
-            <div className="p-4 border-b border-gray-100 flex justify-between items-center">
+            <div className={`p-4 border-b ${isDark ? 'border-gray-700/30' : 'border-gray-100'} flex justify-between items-center`}>
               <div>
-                <h3 className="font-semibold text-primary-500">{elevador.nombre || elevador.codigo}</h3>
-                <span className="text-xs text-text-muted">{elevador.codigo}</span>
+                <h3 className="font-semibold" style={{ color: textColor }}>{elevador.nombre || elevador.codigo}</h3>
+                <span className="text-xs opacity-70" style={{ color: textColor }}>{elevador.codigo}</span>
               </div>
-              <span className="text-xs bg-white/50 px-2 py-1 rounded-full text-text-muted">
+              <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: textColor + '30', color: textColor }}>
                 {cabinasDelElevador.length} cabinas
               </span>
             </div>
             <div className="p-3 max-h-60 overflow-y-auto space-y-2">
               {cabinasDelElevador.length === 0 ? (
-                <div className="text-sm text-text-muted text-center py-2">
+                <div className="text-sm text-center py-2" style={{ color: textColor, opacity: 0.6 }}>
                   Sin cabinas configuradas
                 </div>
               ) : (
-                cabinasDelElevador.map((cabina, cabinaIndex) => {
+                cabinasDelElevador.map((cabina) => {
                   const paramsCount = parametros.filter(
                     p => p.id_cabina === cabina.id_cabina || p.id_cabina === cabina.id
                   ).length;
@@ -285,20 +364,21 @@ const ParametrosCabina = () => {
                   return (
                     <div
                       key={cabina.id_cabina || cabina.id}
-                      className={`bg-white/60 rounded-lg p-3 border-2 transition-all cursor-pointer ${
-                        isCabinaSelected ? 'border-primary-500 bg-primary-50/80' : 'border-gray-200 hover:border-gray-400'
+                      className={`rounded-lg p-3 border-2 transition-all cursor-pointer ${
+                        isCabinaSelected ? 'border-white/80 bg-white/30' : 'border-white/20 hover:border-white/50'
                       }`}
+                      style={{ backgroundColor: textColor + '15' }}
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleSelectCabina(cabina, color);
+                        handleSelectCabina(cabina, cardBg);
                       }}
                     >
                       <div className="flex justify-between items-center">
                         <div>
-                          <div className="font-medium text-primary-500">{cabina.nombre}</div>
-                          <div className="text-xs text-text-muted">{cabina.nombre_corto || 'Sin nombre corto'}</div>
+                          <div className="font-medium" style={{ color: textColor }}>{cabina.nombre}</div>
+                          <div className="text-xs opacity-60" style={{ color: textColor }}>{cabina.nombre_corto || 'Sin nombre corto'}</div>
                         </div>
-                        <span className="text-xs bg-white/70 px-2 py-1 rounded-full text-text-muted">
+                        <span className="text-xs px-2 py-1 rounded-full" style={{ backgroundColor: textColor + '25', color: textColor }}>
                           {paramsCount} parámetros
                         </span>
                       </div>
@@ -315,23 +395,27 @@ const ParametrosCabina = () => {
 
   const renderDetailView = () => {
     if (!selectedCabina) return null;
-    const cintilloColor = getCintilloColor(selectedColor);
+    const textColor = getTextColor(0, 1);
 
     return (
-      <div className="bg-white rounded-xl shadow-card overflow-hidden">
-        <div className={`h-2 w-full ${cintilloColor}`} />
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center flex-wrap gap-2">
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} overflow-hidden`}>
+        <div className="h-2 w-full" style={{ backgroundColor: selectedColor }} />
+        <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center flex-wrap gap-2`}>
           <div>
-            <h2 className="text-lg font-semibold text-primary-500">
+            <h2 className={`text-lg font-semibold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
               {selectedCabina.nombre}
             </h2>
-            <span className="text-sm text-text-muted">
+            <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
               {getCabinaNombre(selectedCabina.id_cabina || selectedCabina.id)} - {selectedCabina.nombre_corto || 'Sin nombre corto'}
             </span>
           </div>
           <button
             onClick={handleCreate}
-            className="bg-primary-500 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-primary-700 transition-colors flex items-center gap-1"
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors shadow-sm flex items-center gap-1 ${
+              isDark 
+                ? 'bg-cyan-600 text-white hover:bg-cyan-700' 
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+            }`}
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/>
@@ -342,32 +426,32 @@ const ParametrosCabina = () => {
 
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50">
+            <thead className={isDark ? 'bg-gray-700' : 'bg-gray-50'}>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Nombre</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Nombre Corto</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Variable SCADA</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Unidad</th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-text-secondary">Estado</th>
-                <th className="px-4 py-3 text-center text-xs font-medium text-text-secondary">Acciones</th>
+                <th className={`px-4 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Nombre</th>
+                <th className={`px-4 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Nombre Corto</th>
+                <th className={`px-4 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Variable SCADA</th>
+                <th className={`px-4 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Unidad</th>
+                <th className={`px-4 py-3 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Estado</th>
+                <th className={`px-4 py-3 text-center text-xs font-medium ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
               {parametrosFiltrados.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="px-4 py-8 text-center text-text-muted">
+                  <td colSpan="6" className={`px-4 py-8 text-center ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
                     No hay parámetros configurados para esta cabina
                   </td>
                 </tr>
               ) : (
                 parametrosFiltrados.map((item) => (
-                  <tr key={item.id_parametro || item.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium">{item.nombre}</td>
-                    <td className="px-4 py-3 text-sm">{item.nombre_corto || '-'}</td>
-                    <td className="px-4 py-3 text-sm">{getVariableNombre(item.variable_scada_id)}</td>
-                    <td className="px-4 py-3 text-sm">{item.unidad || '-'}</td>
+                  <tr key={item.id_parametro || item.id} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                    <td className={`px-4 py-3 text-sm font-medium ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>{item.nombre}</td>
+                    <td className={`px-4 py-3 text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{item.nombre_corto || '-'}</td>
+                    <td className={`px-4 py-3 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{getVariableNombre(item.variable_scada_id)}</td>
+                    <td className={`px-4 py-3 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>{item.unidad || '-'}</td>
                     <td className="px-4 py-3 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs ${item.activo ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                      <span className={`px-2 py-1 rounded-full text-xs ${item.activo ? (isDark ? 'bg-green-900/50 text-green-300' : 'bg-green-100 text-green-800') : (isDark ? 'bg-red-900/50 text-red-300' : 'bg-red-100 text-red-800')}`}>
                         {item.activo ? 'Activo' : 'Inactivo'}
                       </span>
                     </td>
@@ -376,7 +460,7 @@ const ParametrosCabina = () => {
                         {puedeEditar('parametros_cabina') && (
                           <button
                             onClick={() => handleEdit(item)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded text-sm"
+                            className={`p-1 rounded-lg transition-colors ${isDark ? 'text-cyan-400 hover:bg-gray-700' : 'text-blue-600 hover:bg-blue-50'}`}
                             title="Editar"
                           >
                             ✏️
@@ -385,7 +469,7 @@ const ParametrosCabina = () => {
                         {puedeEliminar('parametros_cabina') && (
                           <button
                             onClick={() => handleDelete(item.id_parametro || item.id)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded text-sm"
+                            className={`p-1 rounded-lg transition-colors ${isDark ? 'text-red-400 hover:bg-gray-700' : 'text-red-600 hover:bg-red-50'}`}
                             title="Desactivar"
                           >
                             🗑️
@@ -399,17 +483,100 @@ const ParametrosCabina = () => {
             </tbody>
           </table>
         </div>
-        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-sm text-text-muted">
+        <div className={`px-4 py-2 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border-t text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
           Mostrando {parametrosFiltrados.length} parámetros
         </div>
       </div>
     );
   };
 
+  // ✅ Renderizar controles de configuración de colores
+  const renderColorConfig = () => (
+    <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} p-4 rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} mb-6`}>
+      <div className="flex flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+          <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
+            Color inferior:
+          </label>
+          <input
+            type="color"
+            value={colorConfig.color_inferior}
+            onChange={(e) => setColorConfig({ ...colorConfig, color_inferior: e.target.value })}
+            className="w-10 h-10 rounded cursor-pointer border border-gray-300"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
+            Color superior:
+          </label>
+          <input
+            type="color"
+            value={colorConfig.color_superior}
+            onChange={(e) => setColorConfig({ ...colorConfig, color_superior: e.target.value })}
+            className="w-10 h-10 rounded cursor-pointer border border-gray-300"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
+            Texto inferior:
+          </label>
+          <input
+            type="color"
+            value={colorConfig.texto_inferior}
+            onChange={(e) => setColorConfig({ ...colorConfig, texto_inferior: e.target.value })}
+            className="w-10 h-10 rounded cursor-pointer border border-gray-300"
+          />
+        </div>
+        <div className="flex items-center gap-2">
+          <label className={`text-sm font-medium ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
+            Texto superior:
+          </label>
+          <input
+            type="color"
+            value={colorConfig.texto_superior}
+            onChange={(e) => setColorConfig({ ...colorConfig, texto_superior: e.target.value })}
+            className="w-10 h-10 rounded cursor-pointer border border-gray-300"
+          />
+        </div>
+        <button
+          onClick={guardarConfiguracionColores}
+          className={`px-4 py-2 rounded-lg transition-colors shadow-sm ${
+            isDark 
+              ? 'bg-cyan-600 text-white hover:bg-cyan-700' 
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+          }`}
+        >
+          Guardar Colores
+        </button>
+        <div className="ml-auto flex items-center gap-2">
+          <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>Vista previa:</span>
+          <div 
+            className="w-12 h-8 rounded border border-gray-300"
+            style={{ 
+              background: `linear-gradient(to right, ${colorConfig.color_inferior}, ${colorConfig.color_superior})` 
+            }}
+          />
+          <span 
+            className="text-sm font-medium"
+            style={{ color: colorConfig.texto_inferior }}
+          >
+            Aa
+          </span>
+          <span 
+            className="text-sm font-medium"
+            style={{ color: colorConfig.texto_superior }}
+          >
+            Aa
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <span className="text-primary-500">Cargando datos...</span>
+        <span className={isDark ? 'text-gray-400' : 'text-primary-500'}>Cargando datos...</span>
       </div>
     );
   }
@@ -417,32 +584,37 @@ const ParametrosCabina = () => {
   return (
     <div className="space-y-6">
       {message && (
-        <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+        <div className={`p-4 rounded-lg ${message.type === 'success' ? (isDark ? 'bg-green-900/30 text-green-300 border border-green-800' : 'bg-green-50 text-green-800 border border-green-200') : (isDark ? 'bg-red-900/30 text-red-300 border border-red-800' : 'bg-red-50 text-red-800 border border-red-200')}`}>
           {message.text}
         </div>
       )}
 
       <div className="flex justify-between items-center">
         <div>
-          {/* <h1 className="text-2xl font-bold text-primary-500">Parámetros de Cabina</h1> */}
-          <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-          <p className="text-text-secondary">
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={isDark ? 'text-gray-400' : 'text-text-secondary'}>
             Gestiona los parámetros SCADA de cada cabina
           </p>
         </div>
         <div className="flex gap-2">
           <button
             onClick={() => setViewMode('cards')}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              viewMode === 'cards' ? 'bg-primary-500 text-white' : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors shadow-sm ${
+              viewMode === 'cards' 
+                ? isDark ? 'bg-cyan-600 text-white' : 'bg-white text-gray-700 border border-gray-300 shadow-md'
+                : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             📊 Tarjetas
           </button>
           <button
             onClick={() => setViewMode('tabs')}
-            className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
-              viewMode === 'tabs' ? 'bg-primary-500 text-white' : 'bg-gray-100 text-text-secondary hover:bg-gray-200'
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors shadow-sm ${
+              viewMode === 'tabs' 
+                ? isDark ? 'bg-cyan-600 text-white' : 'bg-white text-gray-700 border border-gray-300 shadow-md'
+                : isDark ? 'bg-gray-700 text-gray-300 hover:bg-gray-600' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
             }`}
           >
             📋 Detalle
@@ -450,36 +622,36 @@ const ParametrosCabina = () => {
         </div>
       </div>
 
+      {renderColorConfig()}
+
       {viewMode === 'cards' ? renderCardView() : renderDetailView()}
 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-primary-500">
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
+            <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+              <h2 className={`text-xl font-semibold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
                 {editingItem ? 'Editar Parámetro' : 'Nuevo Parámetro'}
               </h2>
-              <button onClick={handleCancel} className="text-gray-400 hover:text-gray-600">✕</button>
+              <button onClick={handleCancel} className={isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}>✕</button>
             </div>
             <form onSubmit={handleSubmit} className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Cabina - Solo lectura */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Cabina *
                   </label>
-                  <div className="w-full px-4 py-2 border-2 border-gray-300 rounded-lg bg-gray-100 text-text-muted">
+                  <div className={`w-full px-4 py-2 border-2 rounded-lg ${isDark ? 'border-gray-600 bg-gray-700 text-gray-400' : 'border-gray-300 bg-gray-100 text-text-muted'}`}>
                     {getCabinaNombre(formData.id_cabina) || 'Selecciona una cabina'}
                   </div>
-                  <p className="text-xs text-text-muted mt-1">
+                  <p className={`text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-text-muted'}`}>
                     La cabina se asigna automáticamente desde la selección
                   </p>
                 </div>
 
-                {/* Nombre */}
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Nombre *
                   </label>
                   <input
@@ -488,13 +660,14 @@ const ParametrosCabina = () => {
                     value={formData.nombre}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                    }`}
                   />
                 </div>
 
-                {/* Nombre Corto */}
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Nombre Corto
                   </label>
                   <input
@@ -502,13 +675,14 @@ const ParametrosCabina = () => {
                     name="nombre_corto"
                     value={formData.nombre_corto}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                    }`}
                   />
                 </div>
 
-                {/* Descripción */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Descripción
                   </label>
                   <textarea
@@ -516,20 +690,23 @@ const ParametrosCabina = () => {
                     value={formData.descripcion}
                     onChange={handleInputChange}
                     rows="2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                    }`}
                   />
                 </div>
 
-                {/* Variable SCADA */}
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Variable SCADA
                   </label>
                   <select
                     name="variable_scada_id"
                     value={formData.variable_scada_id}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                    }`}
                   >
                     <option value="">Seleccionar variable</option>
                     {variablesScada.map((v) => (
@@ -540,9 +717,8 @@ const ParametrosCabina = () => {
                   </select>
                 </div>
 
-                {/* Unidad */}
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Unidad
                   </label>
                   <input
@@ -550,13 +726,14 @@ const ParametrosCabina = () => {
                     name="unidad"
                     value={formData.unidad}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                    }`}
                   />
                 </div>
 
-                {/* Factor de Escala */}
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Factor de Escala
                   </label>
                   <input
@@ -565,13 +742,14 @@ const ParametrosCabina = () => {
                     value={formData.factor_escala}
                     onChange={handleInputChange}
                     step="0.01"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                    }`}
                   />
                 </div>
 
-                {/* Offset */}
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Offset
                   </label>
                   <input
@@ -580,13 +758,14 @@ const ParametrosCabina = () => {
                     value={formData.valor_offset}
                     onChange={handleInputChange}
                     step="0.01"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                    }`}
                   />
                 </div>
 
-                {/* Formato */}
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Formato
                   </label>
                   <input
@@ -594,14 +773,15 @@ const ParametrosCabina = () => {
                     name="formato"
                     value={formData.formato}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                    }`}
                     placeholder="0.00"
                   />
                 </div>
 
-                {/* Orden */}
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Orden
                   </label>
                   <input
@@ -609,43 +789,68 @@ const ParametrosCabina = () => {
                     name="orden"
                     value={formData.orden}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                    }`}
                   />
                 </div>
 
-                {/* Alarmas */}
                 <div className="md:col-span-2">
-                  <h4 className="text-sm font-medium text-text-secondary mb-3">Alarmas</h4>
+                  <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Alarmas</h4>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-xs text-text-muted mb-1">Alarma Alto-Alto</label>
-                      <input type="number" name="alarma_alto_alto" value={formData.alarma_alto_alto || ''} onChange={handleInputChange} step="0.01" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                      <label className={`block text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>Alarma Alto-Alto</label>
+                      <input type="number" name="alarma_alto_alto" value={formData.alarma_alto_alto || ''} onChange={handleInputChange} step="0.01" className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                        isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                      }`} />
                     </div>
                     <div>
-                      <label className="block text-xs text-text-muted mb-1">Alarma Alto</label>
-                      <input type="number" name="alarma_alto" value={formData.alarma_alto || ''} onChange={handleInputChange} step="0.01" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                      <label className={`block text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>Alarma Alto</label>
+                      <input type="number" name="alarma_alto" value={formData.alarma_alto || ''} onChange={handleInputChange} step="0.01" className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                        isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                      }`} />
                     </div>
                     <div>
-                      <label className="block text-xs text-text-muted mb-1">Alarma Bajo</label>
-                      <input type="number" name="alarma_bajo" value={formData.alarma_bajo || ''} onChange={handleInputChange} step="0.01" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                      <label className={`block text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>Alarma Bajo</label>
+                      <input type="number" name="alarma_bajo" value={formData.alarma_bajo || ''} onChange={handleInputChange} step="0.01" className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                        isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                      }`} />
                     </div>
                     <div>
-                      <label className="block text-xs text-text-muted mb-1">Alarma Bajo-Bajo</label>
-                      <input type="number" name="alarma_bajo_bajo" value={formData.alarma_bajo_bajo || ''} onChange={handleInputChange} step="0.01" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                      <label className={`block text-xs mb-1 ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>Alarma Bajo-Bajo</label>
+                      <input type="number" name="alarma_bajo_bajo" value={formData.alarma_bajo_bajo || ''} onChange={handleInputChange} step="0.01" className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                        isDark ? 'border-gray-600 bg-gray-700 text-gray-100' : 'border-gray-300 bg-white text-gray-800'
+                      }`} />
                     </div>
                   </div>
                 </div>
 
-                {/* Activo */}
                 <div className="flex items-center">
                   <input type="checkbox" name="activo" checked={formData.activo} onChange={handleInputChange} className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" />
-                  <label className="ml-2 text-sm text-text-secondary">Activo</label>
+                  <label className={`ml-2 text-sm ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Activo</label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-                <button type="button" onClick={handleCancel} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancelar</button>
-                <button type="submit" className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-700 transition-colors">
+              <div className={`flex justify-end gap-3 mt-6 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <button 
+                  type="button" 
+                  onClick={handleCancel} 
+                  className={`px-6 py-2 border rounded-lg transition-colors shadow-sm ${
+                    isDark 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white shadow-md'
+                  }`}
+                >
+                  Cancelar
+                </button>
+                <button 
+                  type="submit" 
+                  className={`px-6 py-2 rounded-lg transition-colors shadow-sm ${
+                    isDark 
+                      ? 'bg-cyan-600 text-white hover:bg-cyan-700' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+                  }`}
+                >
                   {editingItem ? 'Actualizar' : 'Crear'}
                 </button>
               </div>

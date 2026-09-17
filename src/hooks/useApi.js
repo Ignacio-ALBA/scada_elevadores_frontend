@@ -1,10 +1,11 @@
 // frontend/src/hooks/useApi.js
 import { useState, useCallback } from 'react';
 import axios from 'axios';
-import { APP_CONFIG } from '../config';
+import { API_URL } from '../config';
 
 const api = axios.create({
-  baseURL: APP_CONFIG.apiBaseUrl,
+  // baseURL: APP_CONFIG.apiBaseUrl,
+  baseURL: API_URL,
   headers: {
     'Content-Type': 'application/json',
   },

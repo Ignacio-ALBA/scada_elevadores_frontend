@@ -6,6 +6,7 @@ import { variableScadaService } from '../../../services/variableScadaService';
 import { emuladorService } from '../../../services/emuladorService';
 import { usePermisos } from '../../../context/PermisoContext';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
+import { API_BASE_URL } from '../../../config';
 
 // ============================================
 // COMPONENTE DraggableCard
@@ -340,8 +341,8 @@ const InterfacesVisuales = () => {
       const formDataFile = new FormData();
       formDataFile.append('file', file);
       
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5290/api';
-      const response = await fetch(`${API_URL}/interfaces-visuales/upload-imagen`, {
+      // const response = await fetch('http://localhost:8000/api/interfaces-visuales/upload-imagen', {
+      const response = await fetch(`${API_BASE_URL}/api/interfaces-visuales/upload-imagen`, {
         method: 'POST',
         body: formDataFile,
         headers: {
@@ -351,9 +352,13 @@ const InterfacesVisuales = () => {
       
       const data = await response.json();
       if (response.ok) {
+        // setFormData(prev => ({
+        //   ...prev,
+        //   imagen_fondo: `http://localhost:8000${data.url}`,
+        // }));
         setFormData(prev => ({
           ...prev,
-          imagen_fondo: `${API_URL.replace('/api', '')}${data.url}`,
+          imagen_fondo: `${API_BASE_URL}${data.url}`,
         }));
         setMessage({ type: 'success', text: 'Imagen subida correctamente' });
       } else {

@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { elevadorService } from '../../../services/elevadorService';
 
-const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
+const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading, isDark = false }) => {
   const [elevadores, setElevadores] = useState([]);
   const [loadingElevadores, setLoadingElevadores] = useState(true);
   const [formData, setFormData] = useState({
@@ -56,7 +56,6 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     
-    // Validaciones
     if (!formData.id_elevador) {
       alert('Debes seleccionar un elevador');
       return;
@@ -95,8 +94,8 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
 
   if (loadingElevadores) {
     return (
-      <div className="p-6 text-center">
-        <span className="text-text-muted">Cargando elevadores...</span>
+      <div className={`p-6 text-center ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
+        Cargando elevadores...
       </div>
     );
   }
@@ -104,7 +103,7 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
   return (
     <form onSubmit={handleSubmit} className="p-6 space-y-4">
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-1">
+        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
           Elevador *
         </label>
         <select
@@ -112,11 +111,15 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
           value={formData.id_elevador}
           onChange={handleChange}
           required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-800'
+          }`}
         >
           <option value="">Seleccionar elevador</option>
-          {elevadores.map((e, idx) => (
-            <option key={`elevador-${e.id_elevador || e.id || idx}`} value={e.id_elevador || e.id}>
+          {elevadores.map((e) => (
+            <option key={e.id_elevador || e.id} value={e.id_elevador || e.id}>
               {e.codigo} - {e.nombre}
             </option>
           ))}
@@ -124,7 +127,7 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-1">
+        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
           Tipo de Mantenimiento *
         </label>
         <select
@@ -132,7 +135,11 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
           value={formData.tipo}
           onChange={handleChange}
           required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-800'
+          }`}
         >
           {tipos.map((t) => (
             <option key={t.value} value={t.value}>{t.label}</option>
@@ -141,7 +148,7 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-1">
+        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
           Descripción *
         </label>
         <textarea
@@ -150,13 +157,17 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
           onChange={handleChange}
           required
           rows="3"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-800'
+          }`}
           placeholder="Descripción del mantenimiento"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-1">
+        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
           Fecha Programada *
         </label>
         <input
@@ -165,19 +176,27 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
           value={formData.fecha_programada}
           onChange={handleChange}
           required
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-800'
+          }`}
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-1">
+        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
           Estado
         </label>
         <select
           name="estado"
           value={formData.estado}
           onChange={handleChange}
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-800'
+          }`}
         >
           {estados.map((e) => (
             <option key={e.value} value={e.value}>{e.label}</option>
@@ -186,7 +205,7 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-1">
+        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
           Costo
         </label>
         <input
@@ -196,13 +215,17 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
           onChange={handleChange}
           min="0"
           step="0.01"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-800'
+          }`}
           placeholder="0.00"
         />
       </div>
 
       <div>
-        <label className="block text-sm font-medium text-text-secondary mb-1">
+        <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
           Notas
         </label>
         <textarea
@@ -210,23 +233,35 @@ const MantenimientoForm = ({ mantenimiento, onSave, onCancel, loading }) => {
           value={formData.notas}
           onChange={handleChange}
           rows="2"
-          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-800'
+          }`}
           placeholder="Notas adicionales"
         />
       </div>
 
-      <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+      <div className={`flex justify-end gap-3 mt-6 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
         <button
           type="button"
           onClick={onCancel}
-          className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+          className={`px-6 py-2 border rounded-lg transition-colors shadow-sm ${
+            isDark 
+              ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+              : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white shadow-md'
+          }`}
         >
           Cancelar
         </button>
         <button
           type="submit"
           disabled={loading}
-          className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+          className={`px-6 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50 ${
+            isDark 
+              ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+          }`}
         >
           {loading ? 'Guardando...' : 'Guardar Mantenimiento'}
         </button>

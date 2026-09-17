@@ -4,9 +4,13 @@ import { edificioService } from '../../../services/edificioService';
 import { empresaService } from '../../../services/empresaService';
 import { usePermisos } from '../../../context/PermisoContext';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
+import SearchBar from '../../common/SearchBar';
+import DataTable from '../../common/DataTable';
 
 const Edificios = () => {
   const [edificios, setEdificios] = useState([]);
+  const [filteredEdificios, setFilteredEdificios] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [empresas, setEmpresas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -15,6 +19,9 @@ const Edificios = () => {
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
   const pageTitle = useNombreInterfaz('edificios');
 
+  // ✅ Obtener el tema para estilos dinámicos
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
 
   const [formData, setFormData] = useState({
     id_empresa: '',
@@ -32,6 +39,10 @@ const Edificios = () => {
     cargarDatos();
     cargarEmpresas();
   }, []);
+
+  useEffect(() => {
+    aplicarFiltros();
+  }, [edificios, searchTerm]);
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -54,6 +65,27 @@ const Edificios = () => {
       console.error('Error cargando empresas:', error);
       setMessage({ type: 'error', text: 'Error al cargar las empresas' });
     }
+  };
+
+  const aplicarFiltros = () => {
+    let result = edificios;
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter(item =>
+        item.nombre?.toLowerCase().includes(term) ||
+        item.nombre_corto?.toLowerCase().includes(term) ||
+        item.ubicacion?.toLowerCase().includes(term)
+      );
+    }
+    setFilteredEdificios(result);
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
   };
 
   const handleCreate = () => {
@@ -125,7 +157,6 @@ const Edificios = () => {
       return;
     }
 
-    //  Preparar datos: convertir vacíos a null para campos numéricos
     const dataToSend = {
       id_empresa: parseInt(formData.id_empresa),
       nombre: formData.nombre,
@@ -133,8 +164,8 @@ const Edificios = () => {
       ubicacion: formData.ubicacion || null,
       descripcion: formData.descripcion || null,
       numero_pisos: parseInt(formData.numero_pisos) || 0,
-      latitud: formData.latitud ? parseFloat(formData.latitud) : null,   // ✅
-      longitud: formData.longitud ? parseFloat(formData.longitud) : null, // ✅
+      latitud: formData.latitud ? parseFloat(formData.latitud) : null,
+      longitud: formData.longitud ? parseFloat(formData.longitud) : null,
       activo: formData.activo,
     };
 
@@ -156,7 +187,6 @@ const Edificios = () => {
     setTimeout(() => setMessage(null), 5000);
   };
 
-  // Obtener nombre de empresa por ID
   const getEmpresaNombre = (id) => {
     const empresa = empresas.find(e => (e.id_empresa || e.id) === id);
     return empresa ? empresa.nombre : '-';
@@ -191,14 +221,22 @@ const Edificios = () => {
       )}
 
       <div className="flex justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-        <p className="text-text-secondary">
+        <div>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={`${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>
             Gestiona los edificios del sistema
           </p>
+        </div>
         {puedeCrear('edificios') && (
           <button
             onClick={handleCreate}
-            className="bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm ${
+              isDark 
+                ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+            }`}
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/>
@@ -208,89 +246,44 @@ const Edificios = () => {
         )}
       </div>
 
-      <div className="bg-white rounded-xl shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                {columns.map((col) => (
-                  <th key={col.key} className="px-4 py-3 text-left text-xs font-medium text-text-secondary">
-                    {col.label}
-                  </th>
-                ))}
-                <th className="px-4 py-3 text-center text-xs font-medium text-text-secondary">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-text-muted">
-                    Cargando...
-                  </td>
-                </tr>
-              ) : edificios.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-text-muted">
-                    No hay edificios registrados
-                  </td>
-                </tr>
-              ) : (
-                edificios.map((item) => (
-                  <tr key={item.id_edificio || item.id} className="hover:bg-gray-50">
-                    {columns.map((col) => (
-                      <td key={col.key} className="px-4 py-3 text-sm">
-                        {col.render ? col.render(item) : item[col.key] || '-'}
-                      </td>
-                    ))}
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex justify-center gap-2">
-                        {puedeEditar('edificios') && (
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded text-sm"
-                            title="Editar"
-                          >
-                            ✏️
-                          </button>
-                        )}
-                        {puedeEliminar('edificios') && (
-                          <button
-                            onClick={() => handleDelete(item.id_edificio || item.id)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded text-sm"
-                            title="Desactivar"
-                          >
-                            🗑️
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <SearchBar
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        onClear={handleClearFilters}
+        placeholder="Buscar por nombre, nombre corto o ubicación..."
+        totalItems={edificios.length}
+        filteredItems={filteredEdificios.length}
+        isDark={isDark}
+      />
+
+      <DataTable
+        columns={columns}
+        data={filteredEdificios}
+        loading={loading}
+        onEdit={puedeEditar('edificios') ? handleEdit : null}
+        onDelete={puedeEliminar('edificios') ? handleDelete : null}
+        canEdit={puedeEditar('edificios')}
+        canDelete={puedeEliminar('edificios')}
+        emptyMessage="No hay edificios registrados"
+        isDark={isDark}
+      />
 
       {/* Modal para crear/editar */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-primary-500">
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
+            <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+              <h2 className={`text-xl font-semibold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
                 {editingItem ? 'Editar Edificio' : 'Nuevo Edificio'}
               </h2>
-              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setShowModal(false)} className={`${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}>
                 ✕
               </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Selector de Empresa - OBLIGATORIO */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Empresa *
                   </label>
                   <select
@@ -298,11 +291,15 @@ const Edificios = () => {
                     value={formData.id_empresa}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   >
                     <option value="">Seleccionar empresa</option>
-                    {empresas.map((emp, idx) => (
-                      <option key={`empresa-${emp.id_empresa || emp.id || idx}`} value={emp.id_empresa || emp.id}>
+                    {empresas.map((emp) => (
+                      <option key={emp.id_empresa || emp.id} value={emp.id_empresa || emp.id}>
                         {emp.nombre}
                       </option>
                     ))}
@@ -315,7 +312,7 @@ const Edificios = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Nombre *
                   </label>
                   <input
@@ -324,11 +321,15 @@ const Edificios = () => {
                     value={formData.nombre}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Nombre Corto
                   </label>
                   <input
@@ -336,11 +337,15 @@ const Edificios = () => {
                     name="nombre_corto"
                     value={formData.nombre_corto}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Ubicación
                   </label>
                   <input
@@ -348,11 +353,15 @@ const Edificios = () => {
                     name="ubicacion"
                     value={formData.ubicacion}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   />
                 </div>
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Descripción
                   </label>
                   <textarea
@@ -360,11 +369,15 @@ const Edificios = () => {
                     value={formData.descripcion}
                     onChange={handleInputChange}
                     rows="2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Número de Pisos
                   </label>
                   <input
@@ -373,11 +386,15 @@ const Edificios = () => {
                     value={formData.numero_pisos}
                     onChange={handleInputChange}
                     min="0"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Latitud
                   </label>
                   <input
@@ -386,11 +403,15 @@ const Edificios = () => {
                     value={formData.latitud}
                     onChange={handleInputChange}
                     step="0.000001"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Longitud
                   </label>
                   <input
@@ -399,7 +420,11 @@ const Edificios = () => {
                     value={formData.longitud}
                     onChange={handleInputChange}
                     step="0.000001"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   />
                 </div>
                 <div className="flex items-center">
@@ -410,14 +435,22 @@ const Edificios = () => {
                     onChange={handleInputChange}
                     className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
                   />
-                  <label className="ml-2 text-sm text-text-secondary">Activo</label>
+                  <label className={`ml-2 text-sm ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Activo</label>
                 </div>
               </div>
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-                <button type="button" onClick={() => setShowModal(false)} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+              <div className={`flex justify-end gap-3 mt-6 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <button type="button" onClick={() => setShowModal(false)} className={`px-6 py-2 border rounded-lg transition-colors shadow-sm ${
+                  isDark 
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white shadow-md'
+                }`}>
                   Cancelar
                 </button>
-                <button type="submit" className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                <button type="submit" className={`px-6 py-2 rounded-lg transition-colors shadow-sm ${
+                  isDark 
+                    ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+                }`}>
                   {editingItem ? 'Actualizar' : 'Crear'}
                 </button>
               </div>

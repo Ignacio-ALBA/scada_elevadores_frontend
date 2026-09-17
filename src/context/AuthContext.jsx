@@ -1,107 +1,191 @@
+// frontend/src/context/AuthContext.jsx
+// Reemplazar TODO el archivo
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import api from '../services/api';
+import LoadingScreen from '../components/common/LoadingScreen';
 
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(null);
 
   useEffect(() => {
     const loadUser = async () => {
-      // 🧪 MODO PRUEBA: Usuario mock sin autenticación
-      // Para habilitar autenticación real, descomentar el bloque de abajo
-      setUser({
-        id: 1,
-        username: 'admin',
-        rol_id: 1,
-        nombre: 'Admin Test',
-      });
-      setLoading(false);
-      
-      /* COMENTADO PARA PRUEBAS - DESCOMENTAR DESPUÉS PARA AUTENTICACIÓN REAL
       const token = localStorage.getItem('token');
-      const savedUser = localStorage.getItem('user');
       
-      if (token && savedUser) {
+      if (token) {
         try {
-          // Parsear el usuario guardado
-          const parsedUser = JSON.parse(savedUser);
-          // console.log('🔍 AuthContext - Usuario desde localStorage:', parsedUser);
+          // ✅ NO establecer globalmente el header - el interceptor lo maneja automáticamente
+          const response = await api.get('/auth/me');
           
-          // Asegurar que el rol esté disponible
-          const userWithRol = {
-            ...parsedUser,
-            rol_id: parsedUser.rol || parsedUser.rol_id || 1,
+          // console.log(' [AuthContext] /auth/me response:', response.data);
+          
+          const userData = {
+            ...response.data.data,
+            rol_id: response.data.data.rol || response.data.data.rol_id || 1
           };
           
-          // console.log('🔍 AuthContext - Usuario con rol:', userWithRol);
+          setUser(userData);
+          localStorage.setItem('user', JSON.stringify(userData));
+          setToken(token);
           
-          api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-          const response = await api.get('/auth/me');
-          setUser({
-            ...response.data,
-            rol_id: response.data.rol || response.data.rol_id || parsedUser.rol || 1,
-          });
+          // console.log(' [AuthContext] Usuario cargado desde backend');
+          
+          setTimeout(() => {
+            window.dispatchEvent(new CustomEvent('auth:login', { 
+              detail: { user: userData } 
+            }));
+            // console.log(' [AuthContext] Evento auth:login disparado (con delay)');
+          }, 100);
+          
         } catch (error) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          delete api.defaults.headers.common['Authorization'];
-          setUser(null);
+          console.error('❌ [AuthContext] Error cargando usuario:', error);
+          if (error.response?.status === 401) {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('permisos');
+            delete api.defaults.headers.common['Authorization'];
+            setUser(null);
+            setToken(null);
+          }
         }
       }
       setLoading(false);
-      */
     };
 
     loadUser();
   }, []);
 
   const login = async (username, password) => {
+    // ✅ NO usar setLoading aquí para evitar re-renderizar Login
+    // ✅ Usar un estado local para el loading del login
+    
     try {
       const response = await api.post('/auth/login', {
         username,
-        password,
+        password
       });
       
-      // Mapear la respuesta del backend .NET
-      const { token, user } = response.data.data;
+      // console.log(' [AuthContext] login response:', response.data);
       
-      // Asegurar que el objeto user tenga idRol
-      const userWithRol = {
-        ...user,
-        idRol: user.idRol || 1,
-        rol_id: user.idRol || 1, // Para compatibilidad con código existente
+      // La respuesta viene envuelta en ResponseDto<LoginResponseDto>
+      // Estructura (con camelCase): { success, data: { token, tokenType, expiresIn, user }, message, errors }
+      const { token: access_token, user: userData } = response.data.data;
+      
+      localStorage.setItem('token', access_token);
+      localStorage.setItem('user', JSON.stringify(userData));
+      
+      // ✅ NO establecer globalmente el header - el interceptor lo maneja automáticamente
+      
+      const userResponse = await api.get('/auth/me');
+      // console.log(' [AuthContext] /auth/me después de login:', userResponse.data);
+      
+      const fullUserData = {
+        ...userResponse.data.data,
+        rol_id: userResponse.data.data.rol || userResponse.data.data.rol_id || 1
       };
       
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(userWithRol));
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      setUser(userWithRol);
+      localStorage.setItem('user', JSON.stringify(fullUserData));
+      
+      setUser(fullUserData);
+      setToken(access_token);
+      
+      localStorage.removeItem('permisos');
+      
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('auth:login', { 
+          detail: { user: fullUserData } 
+        }));
+        // console.log(' [AuthContext] Evento auth:login disparado (con delay)');
+      }, 100);
+      
       return { success: true };
     } catch (error) {
-      let errorMessage = 'Error al iniciar sesión';
-      // Manejar errores del backend .NET
-      if (error.response?.data?.errors && Array.isArray(error.response.data.errors)) {
-        errorMessage = error.response.data.errors.join(', ');
-      } else if (error.response?.data?.message) {
-        errorMessage = error.response.data.message;
-      } else if (error.response?.status === 415) {
-        errorMessage = 'Error de configuración del servidor (415)';
+      console.error('❌ [AuthContext] Error en login:', error);
+      
+      let errorMsg = 'Usuario o contraseña incorrectos';
+      
+      if (error.response?.data) {
+        const data = error.response.data;
+        if (typeof data === 'string') {
+          errorMsg = data;
+        } else if (data.detail) {
+          if (typeof data.detail === 'string') {
+            errorMsg = data.detail;
+          } else if (Array.isArray(data.detail)) {
+            errorMsg = data.detail.map(e => e.msg || e).join(', ');
+          }
+        } else if (data.message) {
+          errorMsg = data.message;
+        }
+      } else if (error.message) {
+        errorMsg = error.message;
       }
-      return { success: false, error: errorMessage };
+      
+      // console.log(' [AuthContext] Error final para Login:', errorMsg);
+      
+      //  IMPORTANTE: NO modificar el estado global loading aquí
+      return { 
+        success: false, 
+        error: errorMsg 
+      };
     }
   };
 
   const logout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('permisos');
     delete api.defaults.headers.common['Authorization'];
     setUser(null);
+    setToken(null);
+    
+    window.dispatchEvent(new CustomEvent('auth:logout'));
   };
 
+  const updateUser = async (updatedData) => {
+    try {
+      const userId = user.id_usuario || user.id;
+      const response = await api.put(`/usuarios/${userId}`, updatedData);
+      
+      if (response.data) {
+        const userResponse = await api.get('/auth/me');
+        const fullUserData = {
+          ...userResponse.data.data,
+          rol_id: userResponse.data.data.rol || userResponse.data.data.rol_id || 1
+        };
+        setUser(fullUserData);
+        localStorage.setItem('user', JSON.stringify(fullUserData));
+        
+        window.dispatchEvent(new CustomEvent('auth:login', { 
+          detail: { user: fullUserData } 
+        }));
+        
+        return fullUserData;
+      }
+    } catch (error) {
+      console.error('❌ [AuthContext] Error actualizando usuario:', error);
+      throw error;
+    }
+  };
+
+  if (loading) {
+    return <LoadingScreen isDark={false} />;
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token,
+      loading, 
+      login, 
+      logout,
+      updateUser,
+      isAuthenticated: !!token 
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -114,3 +198,5 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export default AuthContext;

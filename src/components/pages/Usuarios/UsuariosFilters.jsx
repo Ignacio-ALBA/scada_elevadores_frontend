@@ -1,64 +1,81 @@
+// frontend/src/components/pages/Usuarios/UsuariosFilters.jsx
 import React from 'react';
 
-// SVG Iconos inline
 const IconSearch = () => (
   <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd"/>
-  </svg>
-);
-
-const IconReset = () => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-    <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 1119.414 5.414 1 1 0 01-1.414-1.414A5.002 5.002 0 004.059 4.1V3a1 1 0 011-1z" clipRule="evenodd"/>
+    <path d="M12.9 14.32a8 8 0 111.41-1.41l4.29 4.29a1 1 0 01-1.41 1.41l-4.29-4.29zM8 14A6 6 0 108 2a6 6 0 000 12z"/>
   </svg>
 );
 
 const UsuariosFilters = ({ 
   filters, 
   onFilterChange, 
-  onReset
+  onReset,
+  rolOptions,
+  estadoOptions,
+  isDark = false
 }) => {
   return (
-    <div className="bg-white rounded-xl shadow-card p-4 space-y-4">
-      <div className="flex flex-wrap gap-4">
-        <div className="flex-1 min-w-xs">
-          <label className="block text-sm font-medium text-text-primary mb-2">Búsqueda</label>
-          <div className="relative">
-            <input
-              type="text"
-              value={filters.search}
-              onChange={(e) => onFilterChange('search', e.target.value)}
-              placeholder="Buscar por usuario, nombre, email..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-            />
-            <div className="absolute left-3 top-2.5 text-gray-400">
-              <IconSearch />
-            </div>
+    <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} p-4 rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'}`}>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="relative">
+          <div className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400">
+            <IconSearch />
           </div>
+          <input
+            type="text"
+            placeholder="Buscar por usuario, nombre..."
+            value={filters.search}
+            onChange={(e) => onFilterChange('search', e.target.value)}
+            className={`w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+              isDark 
+                ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400' 
+                : 'bg-white border-gray-300 text-gray-800'
+            }`}
+          />
         </div>
 
-        <div className="flex-1 min-w-xs">
-          <label className="block text-sm font-medium text-text-primary mb-2">Estado</label>
-          <select
-            value={filters.activo === undefined ? 'todos' : filters.activo}
-            onChange={(e) => onFilterChange('activo', e.target.value === 'todos' ? undefined : e.target.value === 'true')}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
-          >
-            <option value="todos">Todos los estados</option>
-            <option value="true">Activos</option>
-            <option value="false">Inactivos</option>
-          </select>
-        </div>
+        <select
+          value={filters.rol}
+          onChange={(e) => onFilterChange('rol', e.target.value)}
+          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-700'
+          }`}
+        >
+          {rolOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
 
-        <div className="flex items-end">
-          <button
-            onClick={onReset}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg flex items-center gap-2 hover:bg-gray-300 transition-colors"
-          >
-            <IconReset />
-            Limpiar Filtros
-          </button>
-        </div>
+        <select
+          value={filters.estado}
+          onChange={(e) => onFilterChange('estado', e.target.value)}
+          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-700'
+          }`}
+        >
+          {estadoOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+
+        <button
+          onClick={onReset}
+          className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
+            isDark 
+              ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+              : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+          }`}
+        >
+          <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/>
+          </svg>
+          Limpiar filtros
+        </button>
       </div>
     </div>
   );

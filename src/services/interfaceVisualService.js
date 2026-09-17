@@ -9,13 +9,13 @@ export const interfaceVisualService = {
         if (params.limit) queryParams.append('limit', params.limit);
         
         const response = await api.get(`/interfaces-visuales/?${queryParams.toString()}`);
-        return response.data.data || response.data;
+        return response.data;
     },
 
     // Obtener una interfaz por ID
     getById: async (id) => {
         const response = await api.get(`/interfaces-visuales/${id}`);
-        return response.data.data || response.data;
+        return response.data;
     },
 
     // Crear una nueva interfaz

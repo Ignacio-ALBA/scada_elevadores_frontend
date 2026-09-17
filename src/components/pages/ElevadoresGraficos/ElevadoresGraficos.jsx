@@ -2,8 +2,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { configuracionIGService } from '../../../services/configuracionIGService';
-import InterfaceCard from './InterfaceCard';  // ✅ IMPORTADO
+import InterfaceCard from './InterfaceCard';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
+import { useSafeTheme } from '../../../hooks/useSafeTheme'; // ✅ IMPORTAR
 
 // SVG Iconos
 const IconElevator = () => (
@@ -19,6 +20,10 @@ const ElevadoresGraficos = () => {
   const [activeTab, setActiveTab] = useState('activos');
   const navigate = useNavigate();
   const pageTitle = useNombreInterfaz('elevadores_graficos');
+  
+  // ✅ OBTENER TEMA
+  const { temaActual } = useSafeTheme();
+  const isDark = temaActual === 'oscuro';
 
   useEffect(() => {
     cargarConfiguraciones();
@@ -59,8 +64,8 @@ const ElevadoresGraficos = () => {
     return (
       <div className="flex justify-center items-center h-64">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500 mx-auto"></div>
-          <p className="text-text-secondary mt-4">Cargando interfaces gráficas...</p>
+          <div className={`animate-spin rounded-full h-12 w-12 border-b-2 mx-auto ${isDark ? 'border-cyan-400' : 'border-primary-500'}`}></div>
+          <p className={isDark ? 'text-gray-400 mt-4' : 'text-text-secondary mt-4'}>Cargando interfaces gráficas...</p>
         </div>
       </div>
     );
@@ -68,7 +73,8 @@ const ElevadoresGraficos = () => {
 
   if (error) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
+      <div className={isDark ? 'bg-red-900/30 border-red-800 text-red-300' : 'bg-red-50 border-red-200 text-red-700'} 
+           style={{ borderWidth: '1px', borderRadius: '0.5rem', padding: '1rem' }}>
         {error}
       </div>
     );
@@ -77,20 +83,19 @@ const ElevadoresGraficos = () => {
   return (
     <div className="space-y-6">
       <div>
-        {/* <h1 className="text-2xl font-bold text-primary-500">Elevadores Gráficos</h1> */}
-        <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-        <p className="text-text-secondary">
+        <h1 className={`text-2xl font-bold ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>{pageTitle}</h1>
+        <p className={isDark ? 'text-gray-400' : 'text-text-secondary'}>
           Visualiza las interfaces gráficas configuradas para los elevadores
         </p>
       </div>
 
-      <div className="flex gap-4 border-b border-gray-200">
+      <div className={`flex gap-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
         <button
           onClick={() => setActiveTab('activos')}
           className={`py-3 px-4 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'activos'
-              ? 'border-primary-500 text-primary-500'
-              : 'border-transparent text-text-secondary hover:text-primary-500'
+              ? isDark ? 'border-cyan-400 text-cyan-400' : 'border-primary-500 text-primary-500'
+              : isDark ? 'border-transparent text-gray-400 hover:text-cyan-400' : 'border-transparent text-text-secondary hover:text-primary-500'
           }`}
         >
           ✅ Activas ({configuracionesActivas.length})
@@ -99,8 +104,8 @@ const ElevadoresGraficos = () => {
           onClick={() => setActiveTab('inactivos')}
           className={`py-3 px-4 text-sm font-medium transition-colors border-b-2 ${
             activeTab === 'inactivos'
-              ? 'border-primary-500 text-primary-500'
-              : 'border-transparent text-text-secondary hover:text-primary-500'
+              ? isDark ? 'border-cyan-400 text-cyan-400' : 'border-primary-500 text-primary-500'
+              : isDark ? 'border-transparent text-gray-400 hover:text-cyan-400' : 'border-transparent text-text-secondary hover:text-primary-500'
           }`}
         >
           ❌ Inactivas ({configuracionesInactivas.length})
@@ -108,14 +113,14 @@ const ElevadoresGraficos = () => {
       </div>
 
       {configuracionesMostrar.length === 0 ? (
-        <div className="bg-white rounded-xl shadow-card p-12 text-center">
+        <div className={`${isDark ? 'bg-gray-800 shadow-lg shadow-black/50' : 'bg-white shadow-card'} rounded-xl p-12 text-center`}>
           <div className="text-6xl mb-4">📋</div>
-          <p className="text-text-secondary text-lg">
+          <p className={isDark ? 'text-gray-300 text-lg' : 'text-text-secondary text-lg'}>
             {activeTab === 'activos' 
               ? 'No hay interfaces gráficas activas configuradas' 
               : 'No hay interfaces gráficas inactivas'}
           </p>
-          <p className="text-text-muted text-sm mt-2">
+          <p className={isDark ? 'text-gray-500 text-sm mt-2' : 'text-text-muted text-sm mt-2'}>
             {activeTab === 'activos'
               ? 'Ve a "Catálogo ALBA → Configuración IG" para crear una nueva interfaz'
               : 'Las interfaces inactivas pueden reactivarse desde "Catálogo ALBA → Configuración IG"'}
@@ -128,6 +133,7 @@ const ElevadoresGraficos = () => {
               key={config.id_configuracion}
               configuracion={config}
               onClick={handleCardClick}
+              isDark={isDark} // ✅ PASAR isDark AL COMPONENTE HIJO
             />
           ))}
         </div>

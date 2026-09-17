@@ -4,6 +4,8 @@ import { elevadorService } from '../../../services/elevadorService';
 import { edificioService } from '../../../services/edificioService';
 import { usePermisos } from '../../../context/PermisoContext';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
+import SearchBar from '../../common/SearchBar';
+import DataTable from '../../common/DataTable';
 
 // SVG Iconos inline
 const IconPlus = () => (
@@ -51,6 +53,10 @@ const Elevadores = () => {
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
   const pageTitle = useNombreInterfaz('elevadores');
 
+  // ✅ Obtener el tema para estilos dinámicos
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
+
   const [filters, setFilters] = useState({
     search: '',
     edificio: 'todos',
@@ -79,50 +85,31 @@ const Elevadores = () => {
   });
 
   useEffect(() => {
-    console.log('🚀 useEffect INICIAL - llamando cargarDatos()');
     cargarDatos();
   }, []);
 
   useEffect(() => {
-    console.log('🔄 useEffect aplicarFiltros disparado - elevadores state:', elevadores);
     aplicarFiltros();
   }, [elevadores, filters]);
 
   const cargarDatos = async () => {
-    console.log('📥 cargarDatos() iniciado');
     setLoading(true);
     try {
-      console.log('🔄 Llamando elevadorService.getAll()...');
-      const elevadoresData = await elevadorService.getAll({ activo: true });
-      console.log('✅ elevadorService.getAll() completado:', elevadoresData);
-      console.log('💾 Llamando setElevadores...');
+      const [elevadoresData, edificiosData] = await Promise.all([
+        elevadorService.getAll({ activo: true }),
+        edificioService.getAll({ activo: true })
+      ]);
       setElevadores(elevadoresData);
-      console.log('✅ Elevadores guardados en state');
-      
-      // Intentar cargar edificios, pero no detener si falla
-      try {
-        console.log('🔄 Llamando edificioService.getAll()...');
-        const edificiosData = await edificioService.getAll({ activo: true });
-        console.log('✅ edificioService.getAll() completado:', edificiosData);
-        console.log('💾 Llamando setEdificios...');
-        setEdificios(edificiosData);
-        console.log('✅ Edificios guardados en state');
-      } catch (edificiosError) {
-        console.warn('⚠️ No se pudieron cargar edificios (opcional), pero elevadores sí cargaron:', edificiosError.message);
-        setEdificios([]); // Vacío pero no falla
-      }
+      setEdificios(edificiosData);
     } catch (error) {
-      console.error('❌ ERROR en cargarDatos():', error);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Error response:', error.response);
-      setMessage({ type: 'error', text: 'Error al cargar los datos: ' + error.message });
+      console.error('Error cargando datos:', error);
+      setMessage({ type: 'error', text: 'Error al cargar los datos' });
     } finally {
       setLoading(false);
     }
   };
 
   const aplicarFiltros = () => {
-    console.log('🔍 aplicarFiltros() iniciado con:', { elevadores, filters });
     let result = elevadores;
     
     if (filters.search) {
@@ -146,7 +133,6 @@ const Elevadores = () => {
       result = result.filter(e => e.tipo === filters.tipo);
     }
     
-    console.log('✨ Resultado después de filtros:', result);
     setFilteredElevadores(result);
   };
 
@@ -302,7 +288,6 @@ const Elevadores = () => {
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
     
-    // ✅ Para campos numéricos, convertir o usar null
     if (name === 'piso_maximo' || name === 'piso_minimo') {
       setFormData({
         ...formData,
@@ -321,19 +306,66 @@ const Elevadores = () => {
     return edificio ? edificio.nombre : '-';
   };
 
+  // ✅ Columnas para DataTable
+  const columns = [
+    { key: 'codigo', label: 'Código' },
+    { key: 'nombre', label: 'Nombre' },
+    { 
+      key: 'id_edificio', 
+      label: 'Edificio',
+      render: (item) => getEdificioNombre(item.id_edificio)
+    },
+    { key: 'tipo', label: 'Tipo' },
+    { 
+      key: 'capacidad', 
+      label: 'Capacidad',
+      render: (item) => `${item.capacidad_personas} pers / ${item.capacidad_kg} kg`
+    },
+    { 
+      key: 'velocidad_nominal', 
+      label: 'Velocidad',
+      render: (item) => `${item.velocidad_nominal} m/s`
+    },
+    { 
+      key: 'piso_minimo', 
+      label: 'Piso Mín.',
+      render: (item) => item.piso_minimo !== null ? item.piso_minimo : '-'
+    },
+    { 
+      key: 'piso_maximo', 
+      label: 'Piso Máx.',
+      render: (item) => item.piso_maximo !== null ? item.piso_maximo : '-'
+    },
+    { 
+      key: 'estado_operativo', 
+      label: 'Estado',
+      render: (item) => (
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses[item.estado_operativo] || 'bg-gray-100'}`}>
+          {statusLabels[item.estado_operativo] || item.estado_operativo}
+        </span>
+      )
+    },
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-          <p className="text-text-secondary">
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={`${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>
             Gestiona los elevadores del sistema
           </p>
         </div>
         {puedeCrear('elevadores') && (
           <button
             onClick={handleAdd}
-            className="bg-primary-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-primary-700 transition-colors"
+            className={`px-4 py-2 rounded-lg flex items-center gap-2 transition-colors shadow-sm ${
+              isDark 
+                ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+            }`}
           >
             <IconPlus />
             Nuevo Elevador
@@ -347,7 +379,7 @@ const Elevadores = () => {
         </div>
       )}
 
-      <div className="bg-white p-4 rounded-xl shadow-card">
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} p-4 rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'}`}>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
           <div className="relative">
             <input
@@ -355,18 +387,26 @@ const Elevadores = () => {
               placeholder="Buscar por código, nombre..."
               value={filters.search}
               onChange={(e) => handleFilterChange('search', e.target.value)}
-              className="w-full pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+              className={`w-full pl-4 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100 placeholder-gray-400' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`}
             />
           </div>
 
           <select
             value={filters.edificio}
             onChange={(e) => handleFilterChange('edificio', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              isDark 
+                ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                : 'bg-white border-gray-300 text-gray-700'
+            }`}
           >
             <option value="todos">Todos los edificios</option>
-            {edificios.map((ed, idx) => (
-              <option key={`edificio-${ed.id_edificio || ed.id || idx}`} value={ed.id_edificio || ed.id}>
+            {edificios.map((ed) => (
+              <option key={ed.id_edificio || ed.id} value={ed.id_edificio || ed.id}>
                 {ed.nombre}
               </option>
             ))}
@@ -375,7 +415,11 @@ const Elevadores = () => {
           <select
             value={filters.estado}
             onChange={(e) => handleFilterChange('estado', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              isDark 
+                ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                : 'bg-white border-gray-300 text-gray-700'
+            }`}
           >
             {estadoOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -385,7 +429,11 @@ const Elevadores = () => {
           <select
             value={filters.tipo}
             onChange={(e) => handleFilterChange('tipo', e.target.value)}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent ${
+              isDark 
+                ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                : 'bg-white border-gray-300 text-gray-700'
+            }`}
           >
             {tipoOptions.map(opt => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -394,157 +442,66 @@ const Elevadores = () => {
 
           <button
             onClick={handleResetFilters}
-            className="flex items-center justify-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-lg transition-colors ${
+              isDark 
+                ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                : 'border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
           >
+            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"/>
+            </svg>
             Limpiar filtros
           </button>
         </div>
       </div>
 
-      <div className="bg-white rounded-xl shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Código
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Nombre
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Edificio
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Tipo
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Capacidad
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Velocidad
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Piso Mín.
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Piso Máx.
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Estado
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium text-text-secondary uppercase tracking-wider">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {loading ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-8 text-center text-text-muted">
-                    Cargando elevadores...
-                  </td>
-                </tr>
-              ) : filteredElevadores.length === 0 ? (
-                <tr>
-                  <td colSpan="8" className="px-6 py-8 text-center text-text-muted">
-                    No hay elevadores registrados
-                  </td>
-                </tr>
-              ) : (
-                filteredElevadores.map((elevador) => (
-                  <tr key={elevador.id || elevador.id_elevador} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap font-medium text-primary-500">
-                      {elevador.codigo}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {elevador.nombre}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getEdificioNombre(elevador.id_edificio)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {elevador.tipo}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {elevador.capacidad_personas} pers / {elevador.capacidad_kg} kg
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {elevador.velocidad_nominal} m/s
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {elevador.piso_minimo !== null ? elevador.piso_minimo : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm">
-                      {elevador.piso_maximo !== null ? elevador.piso_maximo : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusClasses[elevador.estado_operativo] || 'bg-gray-100'}`}>
-                        {statusLabels[elevador.estado_operativo] || elevador.estado_operativo}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right">
-                      <div className="flex justify-end gap-2">
-                        {puedeEditar('elevadores') && (
-                          <button
-                            onClick={() => handleEdit(elevador)}
-                            className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                            title="Editar"
-                          >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z"/>
-                            </svg>
-                          </button>
-                        )}
-                        {puedeEliminar('elevadores') && (
-                          <button
-                            onClick={() => handleDelete(elevador.id || elevador.id_elevador)}
-                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Eliminar"
-                          >
-                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z"/>
-                            </svg>
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      <DataTable
+        columns={columns}
+        data={filteredElevadores}
+        loading={loading}
+        onEdit={puedeEditar('elevadores') ? handleEdit : null}
+        onDelete={puedeEliminar('elevadores') ? handleDelete : null}
+        canEdit={puedeEditar('elevadores')}
+        canDelete={puedeEliminar('elevadores')}
+        emptyMessage="No hay elevadores registrados"
+        isDark={isDark}
+      />
+
+      {!loading && filteredElevadores.length > 0 && (
+        <div className={`px-6 py-3 ${isDark ? 'bg-gray-700 border-gray-600' : 'bg-gray-50 border-gray-200'} border-t text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'} rounded-b-xl flex justify-between`}>
+          <span>Mostrando {filteredElevadores.length} elevadores</span>
         </div>
-        <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 text-sm text-text-muted">
-          Mostrando {filteredElevadores.length} elevadores
-        </div>
-      </div>
+      )}
 
       {/* Modal Formulario */}
       {showForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-primary-500">
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto`}>
+            <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+              <h2 className={`text-xl font-semibold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
                 {editingElevador ? 'Editar Elevador' : 'Nuevo Elevador'}
               </h2>
-              <button onClick={handleCancel} className="text-gray-400 hover:text-gray-600">✕</button>
+              <button onClick={handleCancel} className={`${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}>✕</button>
             </div>
             <form onSubmit={handleSave} className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Edificio */}
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Edificio *</label>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Edificio *</label>
                   <select
                     name="id_edificio"
                     value={formData.id_edificio}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   >
                     <option value="">Seleccionar edificio</option>
-                    {edificios.map((ed, idx) => (
-                      <option key={`edificio-form-${ed.id_edificio || ed.id || idx}`} value={ed.id_edificio || ed.id}>
+                    {edificios.map((ed) => (
+                      <option key={ed.id_edificio || ed.id} value={ed.id_edificio || ed.id}>
                         {ed.nombre}
                       </option>
                     ))}
@@ -552,79 +509,188 @@ const Elevadores = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Código *</label>
-                  <input type="text" name="codigo" value={formData.codigo} onChange={handleInputChange} required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Ej: ELEV-001" />
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Código *</label>
+                  <input
+                    type="text"
+                    name="codigo"
+                    value={formData.codigo}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                    placeholder="Ej: ELEV-001"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Nombre *</label>
-                  <input type="text" name="nombre" value={formData.nombre} onChange={handleInputChange} required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Ej: Elevador Principal" />
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Nombre *</label>
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={formData.nombre}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                    placeholder="Ej: Elevador Principal"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Tipo *</label>
-                  <select name="tipo" value={formData.tipo} onChange={handleInputChange} required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Tipo *</label>
+                  <select
+                    name="tipo"
+                    value={formData.tipo}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  >
                     <option value="Hidráulico">Hidráulico</option>
                     <option value="Eléctrico">Eléctrico</option>
                   </select>
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Fabricante *</label>
-                  <input type="text" name="fabricante" value={formData.fabricante} onChange={handleInputChange} required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Ej: OTIS" />
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Fabricante *</label>
+                  <input
+                    type="text"
+                    name="fabricante"
+                    value={formData.fabricante}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                    placeholder="Ej: OTIS"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Modelo *</label>
-                  <input type="text" name="modelo" value={formData.modelo} onChange={handleInputChange} required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" placeholder="Ej: OTIS-2000" />
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Modelo *</label>
+                  <input
+                    type="text"
+                    name="modelo"
+                    value={formData.modelo}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                    placeholder="Ej: OTIS-2000"
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Capacidad (personas) *</label>
-                  <input type="number" name="capacidad_personas" value={formData.capacidad_personas} onChange={handleInputChange} required min="1" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Capacidad (personas) *</label>
+                  <input
+                    type="number"
+                    name="capacidad_personas"
+                    value={formData.capacidad_personas}
+                    onChange={handleInputChange}
+                    required
+                    min="1"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Capacidad (kg) *</label>
-                  <input type="number" name="capacidad_kg" value={formData.capacidad_kg} onChange={handleInputChange} required min="100" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Capacidad (kg) *</label>
+                  <input
+                    type="number"
+                    name="capacidad_kg"
+                    value={formData.capacidad_kg}
+                    onChange={handleInputChange}
+                    required
+                    min="100"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Velocidad Nominal (m/s) *</label>
-                  <input type="number" name="velocidad_nominal" value={formData.velocidad_nominal} onChange={handleInputChange} required min="0.1" step="0.1" className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Velocidad Nominal (m/s) *</label>
+                  <input
+                    type="number"
+                    name="velocidad_nominal"
+                    value={formData.velocidad_nominal}
+                    onChange={handleInputChange}
+                    required
+                    min="0.1"
+                    step="0.1"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
-                    Piso Mínimo
-                  </label>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Piso Mínimo</label>
                   <input
                     type="number"
                     name="piso_minimo"
                     value={formData.piso_minimo !== null ? formData.piso_minimo : ''}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                     placeholder="Ej: -1, 0, 1"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
-                    Piso Máximo
-                  </label>
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Piso Máximo</label>
                   <input
                     type="number"
                     name="piso_maximo"
                     value={formData.piso_maximo !== null ? formData.piso_maximo : ''}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                     placeholder="Ej: 25, 30, 50"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Estado *</label>
-                  <select name="estado_operativo" value={formData.estado_operativo} onChange={handleInputChange} required className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Estado *</label>
+                  <select
+                    name="estado_operativo"
+                    value={formData.estado_operativo}
+                    onChange={handleInputChange}
+                    required
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  >
                     <option value="operativo">Operativo</option>
                     <option value="mantenimiento">En Mantenimiento</option>
                     <option value="falla">Con Falla</option>
@@ -633,34 +699,90 @@ const Elevadores = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Año Fabricación</label>
-                  <input type="date" name="anio_fabricacion" value={formData.anio_fabricacion} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Año Fabricación</label>
+                  <input
+                    type="date"
+                    name="anio_fabricacion"
+                    value={formData.anio_fabricacion}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Fecha Instalación</label>
-                  <input type="date" name="fecha_instalacion" value={formData.fecha_instalacion} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Fecha Instalación</label>
+                  <input
+                    type="date"
+                    name="fecha_instalacion"
+                    value={formData.fecha_instalacion}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Último Mantenimiento</label>
-                  <input type="date" name="ultimo_mantenimiento" value={formData.ultimo_mantenimiento} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Último Mantenimiento</label>
+                  <input
+                    type="date"
+                    name="ultimo_mantenimiento"
+                    value={formData.ultimo_mantenimiento}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">Próximo Mantenimiento</label>
-                  <input type="date" name="proximo_mantenimiento" value={formData.proximo_mantenimiento} onChange={handleInputChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Próximo Mantenimiento</label>
+                  <input
+                    type="date"
+                    name="proximo_mantenimiento"
+                    value={formData.proximo_mantenimiento}
+                    onChange={handleInputChange}
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
+                  />
                 </div>
 
                 <div className="flex items-center">
-                  <input type="checkbox" name="activo" checked={formData.activo} onChange={handleInputChange} className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" />
-                  <label className="ml-2 text-sm text-text-secondary">Activo</label>
+                  <input
+                    type="checkbox"
+                    name="activo"
+                    checked={formData.activo}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <label className={`ml-2 text-sm ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Activo</label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-                <button type="button" onClick={handleCancel} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancelar</button>
-                <button type="submit" disabled={loading} className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+              <div className={`flex justify-end gap-3 mt-6 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <button type="button" onClick={handleCancel} className={`px-6 py-2 border rounded-lg transition-colors shadow-sm ${
+                  isDark 
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white shadow-md'
+                }`}>
+                  Cancelar
+                </button>
+                <button type="submit" disabled={loading} className={`px-6 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50 ${
+                  isDark 
+                    ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+                }`}>
                   {loading ? 'Guardando...' : editingElevador ? 'Actualizar' : 'Crear'}
                 </button>
               </div>

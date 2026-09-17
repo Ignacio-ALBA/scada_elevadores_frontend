@@ -7,7 +7,7 @@ import AlarmasFilters from './AlarmasFilters';
 import AlarmasTable from './AlarmasTable';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
 
-//  Opciones FUERA del componente
+// Opciones FUERA del componente
 const prioridadOptions = [
   { value: 'alta', label: 'Alta' },
   { value: 'media', label: 'Media' },
@@ -22,7 +22,6 @@ const estadoOptions = [
 ];
 
 const Alarmas = () => {
-  //  TODOS los hooks al inicio del componente
   const [alarmas, setAlarmas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
@@ -44,18 +43,18 @@ const Alarmas = () => {
   });
   const pageTitle = useNombreInterfaz('alarmas');
 
-  // Resto de funciones...
+  // ✅ Obtener el tema para estilos dinámicos
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
+
   const cargarDatos = async () => {
     setLoading(true);
     try {
-      // Obtener todas las alarmas
       const alarmasData = await alarmasService.getAll({ resuelta: false });
       const alarmasList = Array.isArray(alarmasData) ? alarmasData : [];
       
-      // Aplicar filtros en el frontend
       let filtered = alarmasList;
       
-      // Filtro por búsqueda (mensaje)
       if (filters.search && filters.search.trim() !== '') {
         const searchLower = filters.search.toLowerCase().trim();
         filtered = filtered.filter(a => 
@@ -65,7 +64,6 @@ const Alarmas = () => {
         );
       }
       
-      // Filtro por estado
       if (filters.estado && filters.estado !== 'todos') {
         if (filters.estado === 'activa') {
           filtered = filtered.filter(a => !a.confirmada && !a.resuelta);
@@ -76,7 +74,6 @@ const Alarmas = () => {
         }
       }
       
-      // Filtro por prioridad
       if (filters.prioridad && filters.prioridad !== 'todos') {
         filtered = filtered.filter(a => 
           a.prioridad && a.prioridad.toLowerCase() === filters.prioridad.toLowerCase()
@@ -85,7 +82,6 @@ const Alarmas = () => {
       
       setAlarmas(filtered);
       
-      // Cargar elevadores y tipos alarma (sin cambios)
       const [elevadoresData, tiposData] = await Promise.all([
         elevadorService.getAll({ activo: true }),
         tiposAlarmaService.getAll()
@@ -103,10 +99,9 @@ const Alarmas = () => {
     }
   };
 
-  // Ejecutar cargarDatos cuando cambian los filtros
   useEffect(() => {
     cargarDatos();
-  }, [filters]); 
+  }, [filters]);
 
   const handleFilterChange = (key, value) => {
     setFilters({ ...filters, [key]: value });
@@ -231,12 +226,20 @@ const Alarmas = () => {
     <div className="space-y-6">
       <div className="flex justify-between items-center flex-wrap gap-2">
         <div>
-          <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-          <p className="text-text-secondary">Gestión de alarmas del sistema</p>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={isDark ? 'text-gray-400' : 'text-text-secondary'}>
+            Gestión de alarmas del sistema
+          </p>
         </div>
         <button
           onClick={() => setShowModal(true)}
-          className="bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm ${
+            isDark 
+              ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+          }`}
         >
           <span className="text-lg">+</span> Nueva Alarma Manual
         </button>
@@ -254,6 +257,7 @@ const Alarmas = () => {
         onReset={handleResetFilters}
         estadoOptions={estadoOptions}
         prioridadOptions={prioridadOptions}
+        isDark={isDark}
       />
 
       <AlarmasTable
@@ -263,16 +267,17 @@ const Alarmas = () => {
         onResolver={handleResolver}
         onDelete={handleDelete}
         onEdit={handleEdit}
+        isDark={isDark}
       />
 
       {/* Modal Nueva Alarma Manual / Editar */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-6">
-            <h2 className="text-xl font-bold text-primary-500 mb-4">
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg max-w-md w-full max-h-[90vh] overflow-y-auto p-6`}>
+            <h2 className={`text-xl font-bold mb-4 ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>
               {editingAlarma ? 'Editar Alarma Manual' : 'Nueva Alarma Manual'}
             </h2>
-            <p className="text-sm text-text-muted mb-4">
+            <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
               {editingAlarma 
                 ? 'Edita los campos de la alarma manual.' 
                 : 'Las alarmas manuales son generadas por el usuario para registrar situaciones no automatizadas.'}
@@ -280,7 +285,7 @@ const Alarmas = () => {
             <form onSubmit={handleCreateAlarma}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Elevador *
                   </label>
                   <select
@@ -288,7 +293,11 @@ const Alarmas = () => {
                     value={formData.id_elevador}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   >
                     <option value="">Seleccionar elevador</option>
                     {elevadores.map(e => (
@@ -300,14 +309,18 @@ const Alarmas = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Tipo de Alarma
                   </label>
                   <select
                     name="id_tipo_alarma"
                     value={formData.id_tipo_alarma}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   >
                     <option value="">Seleccionar tipo (opcional)</option>
                     {tiposAlarma.map(t => (
@@ -319,14 +332,18 @@ const Alarmas = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Prioridad
                   </label>
                   <select
                     name="prioridad"
                     value={formData.prioridad}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   >
                     {prioridadOptions.map(opt => (
                       <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -335,7 +352,7 @@ const Alarmas = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Mensaje *
                   </label>
                   <textarea
@@ -344,13 +361,17 @@ const Alarmas = () => {
                     onChange={handleInputChange}
                     required
                     rows="3"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                     placeholder="Descripción de la alarma manual"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Notas
                   </label>
                   <textarea
@@ -358,23 +379,35 @@ const Alarmas = () => {
                     value={formData.notas}
                     onChange={handleInputChange}
                     rows="2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                     placeholder="Notas adicionales (opcional)"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+              <div className={`flex justify-end gap-3 mt-6 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className={`px-4 py-2 border rounded-lg transition-colors shadow-sm ${
+                    isDark 
+                      ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                      : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white shadow-md'
+                  }`}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                  className={`px-4 py-2 rounded-lg transition-colors shadow-sm ${
+                    isDark 
+                      ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+                      : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+                  }`}
                 >
                   {editingAlarma ? 'Actualizar Alarma' : 'Crear Alarma Manual'}
                 </button>

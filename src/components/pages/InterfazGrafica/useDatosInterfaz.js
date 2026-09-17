@@ -14,6 +14,7 @@ export const useDatosInterfaz = (configId) => {
   
   const intervalRef = useRef(null);
   const mountedRef = useRef(true);
+  const cargarDatosRef = useRef(null);
 
   const ESTADOS_ELEVADOR = {
     0: 'falla',
@@ -35,31 +36,22 @@ export const useDatosInterfaz = (configId) => {
     2: 'bajando'
   };
 
-  // ============================================
-  // FUNCIÓN PARA ACTUALIZAR VALORES
-  // ============================================
   const actualizarValores = useCallback((data) => {
     if (!data?.plc?.registros || !configuracion?.elevadores) {
-      console.log('⚠️ No hay datos o configuración');
       return;
     }
 
     const registros = data.plc.registros;
-    // console.log('🔄 Procesando registros:', Object.keys(registros).length);
-    
     const nuevosValores = {};
     
     configuracion.elevadores.forEach((elevador, index) => {
-      // Calcular dirección base usando el índice
       const baseDir = 40001 + index * 20;
       
-      // Obtener valores de los registros
       const estadoVal = registros[baseDir]?.valor ?? 0;
       const pisoVal = registros[baseDir + 1]?.valor ?? 0;
       const sentidoVal = registros[baseDir + 2]?.valor ?? 0;
       const destinoVal = registros[baseDir + 3]?.valor ?? 0;
       
-      // Crear datos del elevador
       const elevadorData = {
         id: elevador.id,
         nombre: elevador.nombre,
@@ -71,7 +63,6 @@ export const useDatosInterfaz = (configId) => {
         cabinas: []
       };
 
-      // Procesar cabinas
       for (let j = 0; j < 2; j++) {
         const cabinaBase = baseDir + 4 + j * 4;
         const pisoCabina = registros[cabinaBase]?.valor;
@@ -91,20 +82,11 @@ export const useDatosInterfaz = (configId) => {
       }
 
       nuevosValores[elevador.id] = elevadorData;
-      
-      // Log para debugging
-      // if (index === 0) {
-      //   console.log(`📊 ${elevador.codigo}: Estado=${estadoVal}, Piso=${pisoVal}, Sentido=${sentidoVal}, Cabinas=${elevadorData.cabinas.length}`);
-      // }
     });
 
-    // console.log('✅ Datos actualizados para', Object.keys(nuevosValores).length, 'elevadores');
     setValoresElevadores(nuevosValores);
   }, [configuracion]);
 
-  // ============================================
-  // FUNCIÓN PARA CARGAR DATOS DEL EMULADOR
-  // ============================================
   const cargarDatosEmulador = useCallback(async () => {
     if (!configuracion?.plc_origen || !mountedRef.current) return;
     
@@ -119,9 +101,10 @@ export const useDatosInterfaz = (configId) => {
     }
   }, [configuracion, actualizarValores]);
 
-  // ============================================
-  // EFECTO PRINCIPAL
-  // ============================================
+  useEffect(() => {
+    cargarDatosRef.current = cargarDatosEmulador;
+  }, [cargarDatosEmulador]);
+
   useEffect(() => {
     if (!configId) {
       setLoading(false);
@@ -133,19 +116,13 @@ export const useDatosInterfaz = (configId) => {
     const cargarDatosIniciales = async () => {
       try {
         setLoading(true);
-        // console.log('🔍 Cargando interfaz gráfica ID:', configId);
         
-        // 1. Obtener configuración
         const config = await configuracionIGService.getDatosInterfaz(configId);
-        // console.log('📋 Configuración recibida:', config?.nombre);
         setConfiguracion(config);
         
-        // 2. Obtener variables SCADA
         const variables = await variableScadaService.getAll({ activo: true, limit: 500 });
-        // console.log('📊 Variables SCADA:', variables.length);
         setVariablesScada(variables);
         
-        // 3. Inicializar valores de elevadores
         const inicial = {};
         if (config?.elevadores) {
           config.elevadores.forEach(e => {
@@ -163,23 +140,18 @@ export const useDatosInterfaz = (configId) => {
         }
         setValoresElevadores(inicial);
         
-        // 4. Cargar datos del emulador inmediatamente
         if (config?.plc_origen) {
-          // console.log('🔄 Cargando datos del emulador...');
           await cargarDatosEmulador();
         }
         
-        // 5. Iniciar polling cada 1 segundo
         if (intervalRef.current) {
           clearInterval(intervalRef.current);
         }
         intervalRef.current = setInterval(() => {
-          if (mountedRef.current) {
-            cargarDatosEmulador();
+          if (mountedRef.current && cargarDatosRef.current) {
+            cargarDatosRef.current();
           }
         }, 1000);
-        
-        // console.log('✅ Interfaz cargada correctamente');
         
       } catch (err) {
         console.error('❌ Error cargando datos iniciales:', err);

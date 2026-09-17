@@ -1,6 +1,8 @@
 // frontend/src/components/pages/Configuraciones/ConfiguracionesGenerales.jsx
 import React, { useState, useEffect } from 'react';
 import { configuracionService } from '../../../services/configuracionService';
+import { useSafeTheme } from '../../../hooks/useSafeTheme';
+import { API_BASE_URL } from '../../../config';
 
 const ConfiguracionesGenerales = () => {
   const [formData, setFormData] = useState({
@@ -17,6 +19,9 @@ const ConfiguracionesGenerales = () => {
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  const { temaActual } = useSafeTheme();
+  const isDark = temaActual === 'oscuro';
 
   useEffect(() => {
     cargarConfiguraciones();
@@ -57,8 +62,8 @@ const ConfiguracionesGenerales = () => {
       const formDataFile = new FormData();
       formDataFile.append('file', file);
       
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5290/api';
-      const response = await fetch(`${API_URL}/configuraciones/upload-imagen`, {
+      // const response = await fetch('http://localhost:8000/api/configuraciones/upload-imagen', {
+      const response = await fetch(`${API_BASE_URL}/api/configuraciones/upload-imagen`, {
         method: 'POST',
         body: formDataFile,
         headers: {
@@ -70,7 +75,7 @@ const ConfiguracionesGenerales = () => {
       if (response.ok) {
         setFormData(prev => ({
           ...prev,
-          [fieldName]: `${API_URL.replace('/api', '')}${data.url}`,
+          [fieldName]: `http://localhost:8000${data.url}`,
         }));
         setMessage({ type: 'success', text: 'Imagen subida correctamente' });
       } else {
@@ -105,22 +110,26 @@ const ConfiguracionesGenerales = () => {
 
   const renderImageUpload = (fieldName, label, currentValue) => (
     <div>
-      <label className="block text-sm font-medium text-text-secondary mb-1">
+      <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
         {label}
       </label>
       <div className="flex items-center gap-4">
         <input
           type="text"
           name={fieldName}
-          value={currentValue}
+          value={currentValue || ''}
           onChange={handleChange}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+          className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-800'
+          }`}
           placeholder="URL de la imagen o sube una"
         />
         <button
           type="button"
           onClick={() => document.getElementById(`upload-${fieldName}`).click()}
-          className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors text-sm whitespace-nowrap"
+          className="px-4 py-2 bg-cyan-600 text-white rounded-lg hover:bg-cyan-700 transition-colors text-sm whitespace-nowrap disabled:opacity-50"
           disabled={uploading}
         >
           {uploading ? 'Subiendo...' : '📁 Subir'}
@@ -147,14 +156,14 @@ const ConfiguracionesGenerales = () => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-card p-6 flex justify-center">
-        <span className="text-primary-500">Cargando configuración...</span>
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-card p-6 flex justify-center`}>
+        <span className={isDark ? 'text-gray-400' : 'text-primary-500'}>Cargando configuración...</span>
       </div>
     );
   }
 
   return (
-    <div className="bg-white rounded-xl shadow-card p-6">
+    <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} p-6`}>
       {message && (
         <div className={`p-4 rounded-lg mb-4 ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
           {message.text}
@@ -163,28 +172,36 @@ const ConfiguracionesGenerales = () => {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">
+          <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
             Nombre de la Empresa
           </label>
           <input
             type="text"
             name="empresa_nombre"
-            value={formData.empresa_nombre}
+            value={formData.empresa_nombre || ''}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+              isDark 
+                ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                : 'bg-white border-gray-300 text-gray-800'
+            }`}
           />
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">
+          <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
             Nombre Corto de la Empresa
           </label>
           <input
             type="text"
             name="nombre_corto_empresa"
-            value={formData.nombre_corto_empresa}
+            value={formData.nombre_corto_empresa || ''}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+              isDark 
+                ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                : 'bg-white border-gray-300 text-gray-800'
+            }`}
             placeholder="Ej: SmartLift"
           />
         </div>
@@ -196,14 +213,18 @@ const ConfiguracionesGenerales = () => {
         {renderImageUpload('icono_empresa', 'Icono', formData.icono_empresa)}
 
         <div>
-          <label className="block text-sm font-medium text-text-secondary mb-1">
+          <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
             Tema
           </label>
           <select
             name="tema"
-            value={formData.tema}
+            value={formData.tema || 'claro'}
             onChange={handleChange}
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+            className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+              isDark 
+                ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                : 'bg-white border-gray-300 text-gray-800'
+            }`}
           >
             <option value="claro">Claro</option>
             <option value="oscuro">Oscuro</option>
@@ -214,7 +235,11 @@ const ConfiguracionesGenerales = () => {
         <button
           type="submit"
           disabled={saving}
-          className="bg-primary-500 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+          className={`px-6 py-2 rounded-lg transition-colors disabled:opacity-50 shadow-sm ${
+            isDark 
+              ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+          }`}
         >
           {saving ? 'Guardando...' : 'Guardar Cambios'}
         </button>

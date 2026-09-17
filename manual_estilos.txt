@@ -1,0 +1,25 @@
+Sidebar con gradiente:
+json
+{
+  "type": "gradient",
+  "gradient": {
+    "direction": "to bottom right",
+    "colors": ["#1a1a2e", "#16213e", "#0f3460"]
+  }
+}
+Botón con transparencia:
+json
+{
+  "type": "rgba",
+  "value": "#3b82f6",
+  "opacity": 0.8
+}
+Texto con gradiente:
+json
+{
+  "type": "gradient",
+  "gradient": {
+    "direction": "to right",
+    "colors": ["#f472b6", "#8b5cf6"]
+  }
+}

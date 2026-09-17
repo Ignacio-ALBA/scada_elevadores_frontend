@@ -4,15 +4,24 @@ import { cabinaService } from '../../../services/cabinaService';
 import { elevadorService } from '../../../services/elevadorService';
 import { usePermisos } from '../../../context/PermisoContext';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
+import SearchBar from '../../common/SearchBar';
+import DataTable from '../../common/DataTable';
 
 const Cabinas = () => {
   const [cabinas, setCabinas] = useState([]);
+  const [filteredCabinas, setFilteredCabinas] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [elevadores, setElevadores] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [message, setMessage] = useState(null);
   const { puedeCrear, puedeEditar, puedeEliminar } = usePermisos();
+  const pageTitle = useNombreInterfaz('catalogo_cabinas');
+
+  // ✅ Obtener el tema para estilos dinámicos
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
 
   const [formData, setFormData] = useState({
     id_elevador: '',
@@ -22,11 +31,13 @@ const Cabinas = () => {
     activo: true,
   });
 
-  const pageTitle = useNombreInterfaz('catalogo_cabinas');
-
   useEffect(() => {
     cargarDatos();
   }, []);
+
+  useEffect(() => {
+    aplicarFiltros();
+  }, [cabinas, searchTerm]);
 
   const cargarDatos = async () => {
     setLoading(true);
@@ -43,6 +54,35 @@ const Cabinas = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const aplicarFiltros = () => {
+    let result = [...cabinas];
+    if (searchTerm.trim()) {
+      const term = searchTerm.toLowerCase().trim();
+      result = result.filter(item =>
+        item.nombre?.toLowerCase().includes(term) ||
+        item.nombre_corto?.toLowerCase().includes(term) ||
+        item.descripcion?.toLowerCase().includes(term)
+      );
+    }
+    // Ordenar por elevador
+    result.sort((a, b) => {
+      const elevadorA = elevadores.find(e => (e.id_elevador || e.id) === a.id_elevador);
+      const elevadorB = elevadores.find(e => (e.id_elevador || e.id) === b.id_elevador);
+      const nombreA = elevadorA?.nombre || elevadorA?.codigo || '';
+      const nombreB = elevadorB?.nombre || elevadorB?.codigo || '';
+      return nombreA.localeCompare(nombreB);
+    });
+    setFilteredCabinas(result);
+  };
+
+  const handleSearchChange = (value) => {
+    setSearchTerm(value);
+  };
+
+  const handleClearFilters = () => {
+    setSearchTerm('');
   };
 
   const handleCreate = () => {
@@ -127,15 +167,6 @@ const Cabinas = () => {
     setEditingItem(null);
   };
 
-  // Ordenar cabinas por elevador
-  const cabinasOrdenadas = [...cabinas].sort((a, b) => {
-    const elevadorA = elevadores.find(e => (e.id_elevador || e.id) === a.id_elevador);
-    const elevadorB = elevadores.find(e => (e.id_elevador || e.id) === b.id_elevador);
-    const nombreA = elevadorA?.nombre || elevadorA?.codigo || '';
-    const nombreB = elevadorB?.nombre || elevadorB?.codigo || '';
-    return nombreA.localeCompare(nombreB);
-  });
-
   const getElevadorNombre = (id) => {
     const elevador = elevadores.find(e => (e.id_elevador || e.id) === id);
     return elevador ? (elevador.nombre || elevador.codigo) : '-';
@@ -162,26 +193,37 @@ const Cabinas = () => {
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <span className="text-primary-500">Cargando datos...</span>
+      <div className={`flex items-center justify-center h-64 ${isDark ? 'text-gray-400' : 'text-primary-500'}`}>
+        <span>Cargando datos...</span>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
+    <div>
+      {message && (
+        <div className={`p-4 rounded-lg mb-4 ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
+          {message.text}
+        </div>
+      )}
+
+      <div className="flex justify-between items-center mb-4">
         <div>
-          {/* <h1 className="text-2xl font-bold text-primary-500">Cabinas</h1> */}
-          <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
-          <p className="text-text-secondary">
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
+          <p className={`${isDark ? 'text-gray-400' : 'text-text-secondary'}`}>
             Gestiona las cabinas de cada elevador
           </p>
         </div>
         {puedeCrear('cabinas') && (
           <button
             onClick={handleCreate}
-            className="bg-primary-500 text-white px-4 py-2 rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+            className={`px-4 py-2 rounded-lg transition-colors flex items-center gap-2 shadow-sm ${
+              isDark 
+                ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+            }`}
           >
             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"/>
@@ -191,89 +233,44 @@ const Cabinas = () => {
         )}
       </div>
 
-      {message && (
-        <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
-          {message.text}
-        </div>
-      )}
+      <SearchBar
+        searchTerm={searchTerm}
+        onSearchChange={handleSearchChange}
+        onClear={handleClearFilters}
+        placeholder="Buscar por nombre, nombre corto o descripción..."
+        totalItems={cabinas.length}
+        filteredItems={filteredCabinas.length}
+        isDark={isDark}
+      />
 
-      <div className="bg-white rounded-xl shadow-card overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                {columns.map((col) => (
-                  <th key={col.key} className="px-4 py-3 text-left text-xs font-medium text-text-secondary">
-                    {col.label}
-                  </th>
-                ))}
-                <th className="px-4 py-3 text-center text-xs font-medium text-text-secondary">
-                  Acciones
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              {cabinasOrdenadas.length === 0 ? (
-                <tr>
-                  <td colSpan={columns.length + 1} className="px-4 py-8 text-center text-text-muted">
-                    No hay cabinas registradas
-                  </td>
-                </tr>
-              ) : (
-                cabinasOrdenadas.map((item) => (
-                  <tr key={item.id_cabina || item.id} className="hover:bg-gray-50">
-                    {columns.map((col) => (
-                      <td key={col.key} className="px-4 py-3 text-sm">
-                        {col.render ? col.render(item) : item[col.key] || '-'}
-                      </td>
-                    ))}
-                    <td className="px-4 py-3 text-center">
-                      <div className="flex justify-center gap-2">
-                        {puedeEditar('cabinas') && (
-                          <button
-                            onClick={() => handleEdit(item)}
-                            className="p-1 text-blue-600 hover:bg-blue-50 rounded text-sm"
-                            title="Editar"
-                          >
-                            ✏️
-                          </button>
-                        )}
-                        {puedeEliminar('cabinas') && (
-                          <button
-                            onClick={() => handleDelete(item.id_cabina || item.id)}
-                            className="p-1 text-red-600 hover:bg-red-50 rounded text-sm"
-                            title="Desactivar"
-                          >
-                            🗑️
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-4 py-2 bg-gray-50 border-t border-gray-200 text-sm text-text-muted">
-          Mostrando {cabinasOrdenadas.length} cabinas
-        </div>
-      </div>
+      <DataTable
+        columns={columns}
+        data={filteredCabinas}
+        loading={loading}
+        onEdit={puedeEditar('cabinas') ? handleEdit : null}
+        onDelete={puedeEliminar('cabinas') ? handleDelete : null}
+        canEdit={puedeEditar('cabinas')}
+        canDelete={puedeEliminar('cabinas')}
+        emptyMessage="No hay cabinas registradas"
+        isDark={isDark}
+      />
 
       {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-[100] p-4">
-          <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="p-6 border-b border-gray-200 flex justify-between items-center">
-              <h2 className="text-xl font-semibold text-primary-500">
+          <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto`}>
+            <div className={`p-6 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+              <h2 className={`text-xl font-semibold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
                 {editingItem ? 'Editar Cabina' : 'Nueva Cabina'}
               </h2>
-              <button onClick={handleCancel} className="text-gray-400 hover:text-gray-600">✕</button>
+              <button onClick={handleCancel} className={`${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-gray-400 hover:text-gray-600'}`}>
+                ✕
+              </button>
             </div>
             <form onSubmit={handleSubmit} className="p-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Elevador *
                   </label>
                   <select
@@ -281,11 +278,15 @@ const Cabinas = () => {
                     value={formData.id_elevador}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   >
                     <option value="">Seleccionar elevador</option>
-                    {elevadores.map((e, idx) => (
-                      <option key={`elevador-${e.id_elevador || e.id || idx}`} value={e.id_elevador || e.id}>
+                    {elevadores.map((e) => (
+                      <option key={e.id_elevador || e.id} value={e.id_elevador || e.id}>
                         {e.nombre || e.codigo}
                       </option>
                     ))}
@@ -293,7 +294,7 @@ const Cabinas = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Nombre *
                   </label>
                   <input
@@ -302,12 +303,16 @@ const Cabinas = () => {
                     value={formData.nombre}
                     onChange={handleInputChange}
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Nombre Corto
                   </label>
                   <input
@@ -315,12 +320,16 @@ const Cabinas = () => {
                     name="nombre_corto"
                     value={formData.nombre_corto}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   />
                 </div>
 
                 <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-text-secondary mb-1">
+                  <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
                     Descripción
                   </label>
                   <textarea
@@ -328,19 +337,39 @@ const Cabinas = () => {
                     value={formData.descripcion}
                     onChange={handleInputChange}
                     rows="2"
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                      isDark 
+                        ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                        : 'bg-white border-gray-300 text-gray-800'
+                    }`}
                   />
                 </div>
 
                 <div className="flex items-center">
-                  <input type="checkbox" name="activo" checked={formData.activo} onChange={handleInputChange} className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500" />
-                  <label className="ml-2 text-sm text-text-secondary">Activa</label>
+                  <input
+                    type="checkbox"
+                    name="activo"
+                    checked={formData.activo}
+                    onChange={handleInputChange}
+                    className="w-4 h-4 text-primary-500 border-gray-300 rounded focus:ring-primary-500"
+                  />
+                  <label className={`ml-2 text-sm ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Activa</label>
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-                <button type="button" onClick={handleCancel} className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">Cancelar</button>
-                <button type="submit" className="px-6 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-700 transition-colors">
+              <div className={`flex justify-end gap-3 mt-6 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                <button type="button" onClick={handleCancel} className={`px-6 py-2 border rounded-lg transition-colors shadow-sm ${
+                  isDark 
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700' 
+                    : 'border-gray-300 text-gray-600 hover:bg-gray-50 bg-white shadow-md'
+                }`}>
+                  Cancelar
+                </button>
+                <button type="submit" className={`px-6 py-2 rounded-lg transition-colors shadow-sm ${
+                  isDark 
+                    ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+                }`}>
                   {editingItem ? 'Actualizar' : 'Crear'}
                 </button>
               </div>

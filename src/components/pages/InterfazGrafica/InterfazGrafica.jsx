@@ -1,20 +1,29 @@
 // frontend/src/components/pages/InterfazGrafica/InterfazGrafica.jsx
+import ReactDOM from 'react-dom';
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams } from 'react-router-dom';
 import { useDatosInterfaz } from './useDatosInterfaz';
-import HeaderInterfaz from './HeaderInterfaz';
-import CarruselElevadores from './CarruselElevadores';
-import MatrizPisos from './MatrizPisos';
-import EstadisticasLateral from './EstadisticasLateral';
+import { VistaClasica, VistaModerna, VistaMejorada, VistaMinimalista } from './vistas';
+import PopupElevador from './PopupElevador';
 import { configuracionService } from '../../../services/configuracionService';
+import { edificioService } from '../../../services/edificioService';
+import { vistasConfiguracionService } from '../../../services/vistasConfiguracionService';
+import { useSafeTheme } from '../../../hooks/useSafeTheme';
+import { preferenciasVistaService } from '../../../services/preferenciasVistaService';
+import { useAuth } from '../../../context/AuthContext';
 
 const InterfazGrafica = () => {
   const { id } = useParams();
   const [modoVista, setModoVista] = useState('2d');
-  const [elevadoresSeleccionados, setElevadoresSeleccionados] = useState([]); // ✅ Array de IDs
+  const [elevadoresSeleccionados, setElevadoresSeleccionados] = useState([]);
   const [renderKey, setRenderKey] = useState(0);
   const mountedRef = useRef(true);
   const [pageTitle, setPageTitle] = useState('NombrePorDefecto');
+  const { temaConfig } = useSafeTheme();
+  const { user } = useAuth();
+
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
 
   const {
     configuracion,
@@ -24,34 +33,107 @@ const InterfazGrafica = () => {
     actualizarDatos
   } = useDatosInterfaz(id);
 
-  //  Forzar renderizado cuando hay datos iniciales
+  const [popupElevador, setPopupElevador] = useState(null);
+  const [edificiosMap, setEdificiosMap] = useState({});
+
+  // Estado para la vista seleccionada
+  const [vistaSeleccionada, setVistaSeleccionada] = useState(null);
+  const [vistasDisponibles, setVistasDisponibles] = useState([]);
+
+  // Cargar edificios
+  useEffect(() => {
+    const cargarEdificios = async () => {
+      try {
+        const edificios = await edificioService.getAll({ activo: true });
+        const map = {};
+        edificios.forEach(e => map[e.id_edificio] = e);
+        setEdificiosMap(map);
+      } catch (error) {
+        console.error('Error cargando edificios:', error);
+      }
+    };
+    cargarEdificios();
+  }, []);
+
+  // Cargar vistas disponibles
+  useEffect(() => {
+    const cargarVistas = async () => {
+      try {
+        const data = await vistasConfiguracionService.getActivas();
+        setVistasDisponibles(data);
+        
+        if (data.length > 0) {
+          let vistaSeleccionada = data[0];
+          
+          //  INTENTAR CARGAR LA VISTA GUARDADA DEL USUARIO
+          if (user?.id_usuario && configuracion?.id_configuracion) {
+            try {
+              const preferencias = await preferenciasVistaService.getPreferencias(
+                user.id_usuario,
+                configuracion.id_configuracion
+              );
+              
+              if (preferencias?.vista_seleccionada) {
+                const vistaGuardada = data.find(v => 
+                  v.nombre === preferencias.vista_seleccionada || 
+                  v.id_vista === parseInt(preferencias.vista_seleccionada)
+                );
+                if (vistaGuardada) {
+                  vistaSeleccionada = vistaGuardada;
+                  // console.log(' Vista cargada desde BD:', vistaSeleccionada.nombre);
+                }
+              }
+            } catch (error) {
+              console.error('Error cargando vista guardada:', error);
+            }
+          }
+          
+          setVistaSeleccionada(vistaSeleccionada);
+        }
+      } catch (error) {
+        console.error('Error cargando vistas:', error);
+      }
+    };
+    cargarVistas();
+  }, [configuracion?.id_configuracion, user?.id_usuario]);
+
+  const handleViewPopup = (elevador) => {
+    // console.log(' [InterfazGrafica] handleViewPopup llamado con elevador:', elevador);
+    setPopupElevador(elevador);
+  };
+
+  // Función para cambiar de vista
+  const handleVistaChange = (vista) => {
+    // console.log(' [InterfazGrafica] handleVistaChange llamado con vista:', vista);
+    // console.log(' [InterfazGrafica] vista.id_vista:', vista?.id_vista);
+    // console.log(' [InterfazGrafica] vista.nombre:', vista?.nombre);
+    // console.log(' [InterfazGrafica] handleVistaChange llamado con:', vista);
+    // console.log(' [InterfazGrafica] vista.id_vista:', vista?.id_vista);
+    // console.log(' [InterfazGrafica] vista.nombre:', vista?.nombre);
+    setVistaSeleccionada(vista);
+  };
+
   useEffect(() => {
     if (valoresElevadores && Object.keys(valoresElevadores).length > 0 && renderKey === 0) {
       setRenderKey(1);
     }
   }, [valoresElevadores]);
 
-  //  Actualizar datos cada 500ms
-  useEffect(() => {
-    if (!configuracion) return;
+  // useEffect(() => {
+  //   if (!configuracion) return;
     
-    mountedRef.current = true;
-    const interval = setInterval(() => {
-      if (mountedRef.current) {
-        actualizarDatos();
-      }
-    }, 500);
+  //   mountedRef.current = true;
+  //   const interval = setInterval(() => {
+  //     if (mountedRef.current) {
+  //       actualizarDatos();
+  //     }
+  //   }, 500);
     
-    return () => {
-      mountedRef.current = false;
-      clearInterval(interval);
-    };
-  }, [configuracion]);
-
-  
-  useEffect(() => {
-    // console.log('📊 elevadoresSeleccionados actualizado:', elevadoresSeleccionados);
-  }, [elevadoresSeleccionados]);
+  //   return () => {
+  //     mountedRef.current = false;
+  //     clearInterval(interval);
+  //   };
+  // }, [configuracion]);
 
   useEffect(() => {
     const cargarTitulo = async () => {
@@ -65,65 +147,37 @@ const InterfazGrafica = () => {
     cargarTitulo();
   }, []);
 
-  
-  //  Manejar selección de elevadores
   const handleElevadorSelect = (elevadorId) => {
-    // console.log('🔍 handleElevadorSelect - ID recibido:', elevadorId);
-    // console.log('🔍 handleElevadorSelect - Selección actual:', elevadoresSeleccionados);
-    
     if (elevadorId === null) {
-      //  Si es null, limpiar todas las selecciones
-      // console.log('🔍 Limpiando todas las selecciones');
       setElevadoresSeleccionados([]);
       return;
     }
 
-
-    // setElevadoresSeleccionados(prev => {
-    //   // Si ya está seleccionado, lo deseleccionamos
-    //   if (prev.includes(elevadorId)) {
-    //     return prev.filter(id => id !== elevadorId);
-    //   }
-    //   // Si no está seleccionado, lo agregamos
-    //   return [...prev, elevadorId];
-    // });
-
     setElevadoresSeleccionados(prev => {
       const isSelected = prev.includes(elevadorId);
-      // console.log('🔍 Toggle - Elevador', elevadorId, 'seleccionado?', isSelected);
-      
       if (isSelected) {
-        const nuevo = prev.filter(id => id !== elevadorId);
-        // console.log('🔍 Deseleccionado - Nuevo estado:', nuevo);
-        return nuevo;
+        return prev.filter(id => id !== elevadorId);
       }
-      const nuevo = [...prev, elevadorId];
-      // console.log('🔍 Seleccionado - Nuevo estado:', nuevo);
-      return nuevo;
-    });  
+      return [...prev, elevadorId];
+    });
   };
 
-  //  Limpiar selección
   const handleClearSelection = () => {
-    // console.log('🧹 handleClearSelection - Limpiando selección');
     setElevadoresSeleccionados([]);
   };
 
-  // Obtener lista de elevadores
   const elevadores = configuracion?.elevadores || [];
   const elevadoresConDatos = elevadores.map(e => ({
     ...e,
     datos: valoresElevadores[e.id] || {}
   }));
 
-  // ✅ Filtrar elevadores según selección
   const elevadoresFiltrados = elevadoresSeleccionados.length === 0
     ? elevadoresConDatos
     : elevadoresConDatos.filter(e => elevadoresSeleccionados.includes(e.id));
 
   const elevadoresActivos = elevadoresConDatos.filter(e => e.datos.estado === 'normal');
 
-  // Calcular pisos mínimo y máximo (usando elevadores filtrados)
   let pisoMin = 0;
   let pisoMax = 15;
   elevadoresFiltrados.forEach(e => {
@@ -133,15 +187,68 @@ const InterfazGrafica = () => {
     });
   });
 
-  // Contar seleccionados
   const totalSeleccionados = elevadoresSeleccionados.length;
+
+  // Renderizar vista según selección
+  const renderVista = () => {
+    const props = {
+      configuracion,
+      elevadoresConDatos,
+      elevadoresFiltrados,
+      elevadoresActivos,
+      totalElevadores: elevadores.length,
+      totalSeleccionados,
+      pisoMin,
+      pisoMax,
+      modoVista,
+      setModoVista,
+      actualizarDatos,
+      handleElevadorSelect,
+      handleClearSelection,
+      handleViewPopup,
+      isDark,
+      renderKey,
+      elevadoresSeleccionados,
+      vistaActual: vistaSeleccionada,
+      onVistaChange: handleVistaChange,
+      vistasDisponibles,
+    };
+
+    // console.log(' [InterfazGrafica] renderVista - vistaSeleccionada:', vistaSeleccionada);
+    // console.log(' [InterfazGrafica] renderVista - vistasDisponibles:', vistasDisponibles);
+
+    if (!vistaSeleccionada) {
+      // console.log(' [InterfazGrafica] renderVista - No hay vista seleccionada, usando VistaClasica');
+      return <VistaClasica {...props} />;
+    }
+
+    const vista = vistasDisponibles.find(v => v.id_vista === vistaSeleccionada.id_vista);
+    // console.log(' [InterfazGrafica] renderVista - vista encontrada:', vista);
+
+    if (vista?.nombre === 'Moderna') {
+      // console.log(' [InterfazGrafica] renderVista - ✅ Renderizando VistaModerna');
+      return <VistaModerna {...props} />;
+    }
+
+    if (vista?.nombre === 'Mejorada') {
+      return <VistaMejorada {...props} />;
+    }
+
+    if (vista?.nombre === 'Minimalista') {
+      return <VistaMinimalista {...props} />;
+    }
+    
+    // console.log(' [InterfazGrafica] renderVista - ❌ Usando VistaClasica (fallback)');
+    
+    return <VistaClasica {...props} />;
+  };
 
   if (loading && !configuracion) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-900">
+      <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-100'}`}>
         <div className="text-center">
           <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-cyan-500 mx-auto"></div>
-          <p className="text-cyan-400 mt-4 font-mono">Cargando interfaz gráfica...</p>
+          <p className={`mt-4 font-mono ${isDark ? 'text-cyan-400' : 'text-primary-500'}`}>Cargando interfaz gráfica...</p>
         </div>
       </div>
     );
@@ -149,7 +256,7 @@ const InterfazGrafica = () => {
 
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-900">
+      <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-100'}`}>
         <div className="bg-red-500/20 border border-red-500/50 rounded-xl p-6 text-red-300">
           <h3 className="text-xl font-bold">❌ Error</h3>
           <p>{error}</p>
@@ -160,7 +267,7 @@ const InterfazGrafica = () => {
 
   if (!configuracion || elevadores.length === 0) {
     return (
-      <div className="flex items-center justify-center h-screen bg-slate-900">
+      <div className={`flex items-center justify-center h-screen ${isDark ? 'bg-slate-900' : 'bg-gray-100'}`}>
         <div className="bg-yellow-500/20 border border-yellow-500/50 rounded-xl p-6 text-yellow-300">
           <h3 className="text-xl font-bold">⚠️ Sin datos</h3>
           <p>No hay elevadores configurados para esta interfaz</p>
@@ -168,56 +275,24 @@ const InterfazGrafica = () => {
       </div>
     );
   }
+  
+  // console.log(' [InterfazGrafica] configuracion (antes del return):', configuracion);
+  // console.log(' [InterfazGrafica] configuracion.id_configuracion:', configuracion?.id_configuracion);
 
   return (
-    <div className="h-screen bg-slate-900 overflow-hidden flex flex-col">
-      {/* Área 1: Header */}
-      <HeaderInterfaz
-        configuracion={configuracion}
-        elevadoresActivos={elevadoresActivos}
-        totalElevadores={elevadores.length}
-        seleccionados={totalSeleccionados}
-        modoVista={modoVista}
-        onModoVistaChange={setModoVista}
-        onActualizar={actualizarDatos}
-        onClearSelection={handleClearSelection} 
-      />
+    <>
+      {renderVista()}
 
-      {/* Áreas 2, 3 y 4 */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Área 2: Carrusel de elevadores - con selección múltiple */}
-        <CarruselElevadores
-          elevadores={elevadoresConDatos}
-          onElevadorSelect={handleElevadorSelect}
-          elevadoresSeleccionados={elevadoresSeleccionados}
-        />
-
-        {/* Áreas 3 y 4: Matriz + Estadísticas */}
-        <div className="flex-1 flex overflow-hidden">
-          {/* Área 3: Matriz de pisos - usando elevadores filtrados */}
-          <div className="flex-1 overflow-hidden">
-            <MatrizPisos
-              key={`matriz-${renderKey}`}
-              elevadores={elevadoresFiltrados}
-              pisoMinimo={pisoMin}
-              pisoMaximo={pisoMax}
-              modoVista={modoVista}
-              elevadorSeleccionado={null} // Ya no usamos selección única
-            />
-          </div>
-
-          {/* Área 4: Estadísticas lateral */}
-          <div className="w-72 bg-slate-800/50 border-l border-slate-700 overflow-y-auto flex-shrink-0">
-            <EstadisticasLateral
-              key={`estadisticas-${renderKey}`}
-              elevadores={elevadoresFiltrados}
-              pisoMinimo={pisoMin}
-              pisoMaximo={pisoMax}
-            />
-          </div>
-        </div>
-      </div>
-    </div>
+      {popupElevador && ReactDOM.createPortal(
+        <PopupElevador
+          elevador={popupElevador}
+          edificio={edificiosMap[popupElevador.id_edificio]}
+          onClose={() => setPopupElevador(null)}
+          isDark={isDark}
+        />,
+        document.body
+      )}
+    </>
   );
 };
 

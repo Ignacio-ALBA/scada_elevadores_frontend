@@ -1,5 +1,6 @@
 // frontend/src/services/configuracionService.js
 import api from './api';
+import { APP_CONFIG } from '../config/index.js';
 
 export const configuracionService = {
     // Configuraciones Generales (Empresa)
@@ -16,20 +17,24 @@ export const configuracionService = {
     // Configuraciones del Sistema - PÚBLICO (sin autenticación)
     getSistemaPublic: async () => {
         // Usamos fetch directo porque no necesita token
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5290/api';
-        const response = await fetch(`${API_URL}/configuraciones/sistema/public`);
+        const response = await fetch(`${APP_CONFIG.apiBaseUrl}/configuraciones/sistema/public`);
         if (!response.ok) {
             throw new Error('Error al cargar configuración del sistema');
         }
-        const result = await response.json();
-        // Extraer .data de la respuesta envuelta
-        return result.data || result;
+        return response.json();
     },
     
     // Configuraciones del Sistema - PROTEGIDO (requiere autenticación)
     getSistema: async () => {
-        const response = await api.get('/configuraciones/sistema');
-        return response.data;
+        try {
+            const response = await api.get('/configuraciones/sistema');
+            // console.log(' [configuracionService] getSistema response:', response.data);
+            // console.log(' [configuracionService] nombre_interfaz_vistas:', response.data.nombre_interfaz_vistas);
+            return response.data;
+        } catch (error) {
+            console.error('Error cargando configuración del sistema:', error);
+            return {};
+        }
     },
     
     updateSistema: async (config) => {
@@ -47,4 +52,14 @@ export const configuracionService = {
         const response = await api.put('/configuraciones/colores', colores);
         return response.data;
     },
+};
+
+const getFondoLoginImages = async () => {
+  try {
+    const response = await api.get('/configuraciones/fondo-login-images');
+    return response.data;
+  } catch (error) {
+    console.error('Error obteniendo imágenes de fondo:', error);
+    return [];
+  }
 };

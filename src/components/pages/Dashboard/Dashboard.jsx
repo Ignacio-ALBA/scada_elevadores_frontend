@@ -26,6 +26,9 @@ import StatCard from '../../../components/common/StatCard';
 import ChartCard from '../../../components/common/ChartCard';
 import { useDarkMode } from '../../../hooks/useDarkMode';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
+// import { TEMAS } from '../../../context/ThemeContext';
+// import { useTheme } from '../../../context/ThemeContext';
+import { useSafeTheme } from '../../../hooks/useSafeTheme';
 
 // Iconos
 const IconElevator = () => (
@@ -53,30 +56,77 @@ const IconMaintenance = () => (
   </svg>
 );
 
-const COLORS = {
-  verde: '#22c55e',
-  rojo: '#ef4444',
-  naranja: '#f59e0b',
-  azul: '#3b82f6',
-  cyan: '#06b6d4',
-  morado: '#8b5cf6',
-  rosa: '#ec4899',
-  gris: '#64748b'
-};
+// const COLORS = {
+//   verde: '#22c55e',
+//   rojo: '#ef4444',
+//   naranja: '#f59e0b',
+//   azul: '#3b82f6',
+//   cyan: '#06b6d4',
+//   morado: '#8b5cf6',
+//   rosa: '#ec4899',
+//   gris: '#64748b'
+// };
 
-const ESTADO_COLORS = {
-  'operativo': COLORS.verde,
-  'mantenimiento': COLORS.naranja,
-  'falla': COLORS.rojo,
-  'desconectado': COLORS.gris,
-  'sismo': COLORS.azul
-};
+// const COLORS = {
+//   verde: '#22c55e',
+//   rojo: '#ef4444',
+//   naranja: '#f59e0b',
+//   azul: '#3b82f6',
+//   cyan: '#22d3ee', 
+//   morado: '#a78bfa',
+//   rosa: '#f472b6',
+//   gris: '#94a3b8'   
+// };
+
+// const COLORS = {
+//   verde: isDark ? '#4ade80' : '#22c55e',
+//   rojo: isDark ? '#f87171' : '#ef4444',
+//   naranja: isDark ? '#fbbf24' : '#f59e0b',
+//   azul: isDark ? '#60a5fa' : '#3b82f6',
+//   cyan: isDark ? '#22d3ee' : '#06b6d4',
+//   morado: isDark ? '#a78bfa' : '#8b5cf6',
+//   rosa: isDark ? '#f472b6' : '#ec4899',
+//   gris: isDark ? '#94a3b8' : '#64748b'
+// };
+
+// const ESTADO_COLORS = {
+//   'operativo': COLORS.verde,
+//   'mantenimiento': COLORS.naranja,
+//   'falla': COLORS.rojo,
+//   'desconectado': COLORS.gris,
+//   'sismo': COLORS.azul
+// };
 
 const Dashboard = () => {
   const { user } = useAuth();
-  const { isDark } = useDarkMode();
+  // const { TEMAS } = useTheme();
+  const { temaConfig } = useSafeTheme();
+
+  //  Obtener tema del localStorage
+  const temaLocal = localStorage.getItem('tema_actual') || 'default';
+  const isDark = temaLocal === 'oscuro';
   
-  // ✅ TODOS los hooks al inicio
+  //  Definir COLORS DENTRO del componente, después de isDark
+  const COLORS = {
+    verde: isDark ? '#4ade80' : '#22c55e',
+    rojo: isDark ? '#f87171' : '#ef4444',
+    naranja: isDark ? '#fbbf24' : '#f59e0b',
+    azul: isDark ? '#60a5fa' : '#3b82f6',
+    cyan: isDark ? '#22d3ee' : '#06b6d4',
+    morado: isDark ? '#a78bfa' : '#8b5cf6',
+    rosa: isDark ? '#f472b6' : '#ec4899',
+    gris: isDark ? '#94a3b8' : '#64748b'
+  };
+
+  const ESTADO_COLORS = {
+    'operativo': COLORS.verde,
+    'mantenimiento': COLORS.naranja,
+    'falla': COLORS.rojo,
+    'desconectado': COLORS.gris,
+    'sismo': COLORS.azul
+  };
+
+  //  TODOS los hooks al inicio
   const [stats, setStats] = useState({
     elevadores: { total: 0, porEstado: {} },
     alarmas: { total: 0, activas: 0, porPrioridad: {} },
@@ -85,6 +135,7 @@ const Dashboard = () => {
     edificios: { total: 0 },
     ocupacion: { data: [] }
   });
+  
   const [datosEmulador, setDatosEmulador] = useState(null);
   const [periodo, setPeriodo] = useState('7d');
   const [error, setError] = useState(null);
@@ -108,6 +159,10 @@ const Dashboard = () => {
 
   const pageTitle = useNombreInterfaz('dashboard');
 
+  // const [temaLocal] = useState(() => {
+  //   return localStorage.getItem('tema_actual') || 'default';
+  // });
+ 
   // ============================================
   // FUNCIONES DE CARGA
   // ============================================
@@ -467,7 +522,9 @@ const Dashboard = () => {
       {/* Header */}
       <div className="flex justify-between items-center flex-wrap gap-4">
         <div className={isDark ? 'text-dark' : 'text-light'}>
-          <h1 className="text-2xl font-bold text-primary-500">{pageTitle}</h1>
+          <h1 className={`text-2xl font-bold ${isDark ? 'text-gray-100' : 'text-primary-500'}`}>
+            {pageTitle}
+          </h1>
           <p className="text-text-secondary">
             Bienvenido, {user?.nombre || 'Usuario'} — Resumen general del sistema
           </p>
@@ -482,7 +539,11 @@ const Dashboard = () => {
           <select
             value={periodo}
             onChange={(e) => setPeriodo(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+            className={`px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm ${
+              isDark 
+                ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                : 'bg-white border-gray-300 text-gray-700'
+            }`}
           >
             <option value="7d">Últimos 7 días</option>
             <option value="30d">Últimos 30 días</option>
@@ -490,7 +551,11 @@ const Dashboard = () => {
           </select>
           <button
             onClick={() => cargarTodosLosDatos(true)}
-            className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-700 transition-colors text-sm flex items-center gap-2"
+            className={`px-4 py-2 rounded-lg transition-colors text-sm flex items-center gap-2 border ${
+              isDark 
+                ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border-gray-600' 
+                : 'bg-white text-gray-700 hover:bg-gray-50 border-gray-300'
+            }`}
           >
             🔄 Actualizar todo
           </button>
@@ -550,7 +615,11 @@ const Dashboard = () => {
             <select
               value={periodo}
               onChange={(e) => setPeriodo(e.target.value)}
-              className="text-xs border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              className={`text-xs border rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-700'
+              }`}
             >
               <option value="7d">7 días</option>
               <option value="30d">30 días</option>
@@ -560,14 +629,42 @@ const Dashboard = () => {
         >
           <ResponsiveContainer width="100%" height={250}>
             <ComposedChart data={trendData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="label" tick={{ fontSize: 10 }} />
-              <YAxis tick={{ fontSize: 10 }} />
-              <Tooltip />
-              <Legend />
-              <Bar dataKey="eventos" fill={COLORS.azul} name="Eventos" />
-              <Bar dataKey="alarmas" fill={COLORS.rojo} name="Alarmas" />
-              <Line type="monotone" dataKey="mantenimientos" stroke={COLORS.naranja} name="Mantenimiento" />
+              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e2e8f0'} />
+              <XAxis 
+                dataKey="label" 
+                tick={{ fontSize: 10, fill: isDark ? '#e2e8f0' : '#64748b' }} 
+                axisLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+                tickLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+              />
+              <YAxis 
+                tick={{ fontSize: 10, fill: isDark ? '#e2e8f0' : '#64748b' }}
+                axisLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+                tickLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: isDark ? '#1f2937' : '#ffffff', 
+                  color: isDark ? '#ffffff' : '#000000',
+                  border: isDark ? '1px solid #374151' : '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '8px 12px'
+                }} 
+                labelStyle={{ color: isDark ? '#e2e8f0' : '#000000' }}
+              />
+              <Legend 
+                wrapperStyle={{ 
+                  color: isDark ? '#e2e8f0' : '#000000',
+                  fontSize: '12px'
+                }}
+                formatter={(value) => (
+                  <span style={{ color: isDark ? '#e2e8f0' : '#000000' }}>
+                    {value}
+                  </span>
+                )}
+              />
+              <Bar dataKey="eventos" fill={isDark ? '#60a5fa' : '#3b82f6'} name="Eventos" />
+              <Bar dataKey="alarmas" fill={isDark ? '#f87171' : '#ef4444'} name="Alarmas" />
+              <Line type="monotone" dataKey="mantenimientos" stroke={isDark ? '#fbbf24' : '#f59e0b'} name="Mantenimiento" />
             </ComposedChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -598,12 +695,22 @@ const Dashboard = () => {
                   />
                 ))}
               </Pie>
-              <Tooltip />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: isDark ? '#1f2937' : '#ffffff', 
+                  color: isDark ? '#ffffff' : '#000000',
+                  border: isDark ? '1px solid #374151' : '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '8px 12px'
+                }} 
+                labelStyle={{ color: isDark ? '#e2e8f0' : '#000000' }}
+              />
             </PieChart>
           </ResponsiveContainer>
+          {/* ✅ Etiquetas de colores debajo del gráfico - AHORA CON COLOR ADAPTADO */}
           <div className="flex flex-wrap justify-center gap-3 mt-2">
             {estadoPieData.map((entry) => (
-              <span key={entry.name} className="flex items-center gap-1 text-xs">
+              <span key={entry.name} className={`flex items-center gap-1 text-xs ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                 <span 
                   className="w-3 h-3 rounded-full" 
                   style={{ backgroundColor: ESTADO_COLORS[entry.name.toLowerCase()] || COLORS.gris }}
@@ -622,11 +729,31 @@ const Dashboard = () => {
         >
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={alarmaPieData} layout="vertical">
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis type="number" tick={{ fontSize: 10 }} />
-              <YAxis dataKey="name" type="category" tick={{ fontSize: 10 }} width={60} />
-              <Tooltip />
-              <Bar dataKey="value" fill={COLORS.rojo} />
+              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e2e8f0'} />
+              <XAxis 
+                type="number" 
+                tick={{ fontSize: 10, fill: isDark ? '#e2e8f0' : '#64748b' }}
+                axisLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+                tickLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+              />
+              <YAxis 
+                dataKey="name" 
+                type="category" 
+                tick={{ fontSize: 10, fill: isDark ? '#e2e8f0' : '#64748b', width: 60 }}
+                axisLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+                tickLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: isDark ? '#1f2937' : '#ffffff', 
+                  color: isDark ? '#ffffff' : '#000000',
+                  border: isDark ? '1px solid #374151' : '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '8px 12px'
+                }} 
+                labelStyle={{ color: isDark ? '#e2e8f0' : '#000000' }}
+              />
+              <Bar dataKey="value" fill={isDark ? '#f87171' : '#ef4444'} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -639,11 +766,34 @@ const Dashboard = () => {
         >
           <ResponsiveContainer width="100%" height={200}>
             <BarChart data={ocupacionData.slice(0, 10)}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-              <XAxis dataKey="nombre" tick={{ fontSize: 9 }} interval={0} angle={-45} textAnchor="end" height={50} />
-              <YAxis tick={{ fontSize: 10 }} domain={[0, 100]} />
-              <Tooltip />
-              <Bar dataKey="ocupacion" fill={COLORS.cyan}>
+              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#374151' : '#e2e8f0'} />
+              <XAxis 
+                dataKey="nombre" 
+                tick={{ fontSize: 9, fill: isDark ? '#e2e8f0' : '#64748b' }} 
+                interval={0} 
+                angle={-45} 
+                textAnchor="end" 
+                height={50}
+                axisLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+                tickLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+              />
+              <YAxis 
+                tick={{ fontSize: 10, fill: isDark ? '#e2e8f0' : '#64748b' }} 
+                domain={[0, 100]}
+                axisLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+                tickLine={{ stroke: isDark ? '#4b5563' : '#cbd5e1' }}
+              />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: isDark ? '#1f2937' : '#ffffff', 
+                  color: isDark ? '#ffffff' : '#000000',
+                  border: isDark ? '1px solid #374151' : '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  padding: '8px 12px'
+                }} 
+                labelStyle={{ color: isDark ? '#e2e8f0' : '#000000' }}
+              />
+              <Bar dataKey="ocupacion" fill={isDark ? '#22d3ee' : '#06b6d4'}>
                 {ocupacionData.slice(0, 10).map((entry, index) => (
                   <Cell 
                     key={`cell-${index}`} 
@@ -657,13 +807,13 @@ const Dashboard = () => {
       </div>
 
       {/* Eventos Recientes */}
-      <div className="bg-white rounded-xl shadow-card overflow-hidden">
-        <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-          <h3 className="text-sm font-semibold text-text-secondary">Eventos Recientes</h3>
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} rounded-xl overflow-hidden`}>
+        <div className={`p-4 border-b ${isDark ? 'border-gray-700' : 'border-gray-200'} flex justify-between items-center`}>
+          <h3 className={`text-sm font-semibold ${isDark ? 'text-gray-100' : 'text-gray-700'}`}>Eventos Recientes</h3>
           <button
             onClick={() => cargarEventos(true)}
             disabled={loading.eventos}
-            className="text-xs text-primary-500 hover:text-primary-700 flex items-center gap-1 disabled:opacity-50"
+            className={`text-xs ${isDark ? 'text-gray-400 hover:text-gray-200' : 'text-primary-500 hover:text-primary-700'} flex items-center gap-1 disabled:opacity-50`}
           >
             {loading.eventos ? (
               <span className="inline-block w-3 h-3 border-2 border-primary-500 border-t-transparent rounded-full animate-spin" />
@@ -673,31 +823,37 @@ const Dashboard = () => {
           </button>
         </div>
         <div className="overflow-x-auto">
-          <table className={isDark ? 'table-dark' : 'table-light'}>
-            <thead className="bg-gray-50">
+          <table className="w-full">
+            <thead className={`${isDark ? 'bg-gray-700' : 'bg-gray-50'}`}>
               <tr>
-                <th className="px-4 py-2 text-left text-xs font-medium text-text-secondary">Fecha</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-text-secondary">Evento</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-text-secondary">Elevador</th>
-                <th className="px-4 py-2 text-left text-xs font-medium text-text-secondary">Usuario</th>
+                <th className={`px-4 py-2 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Fecha</th>
+                <th className={`px-4 py-2 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Evento</th>
+                <th className={`px-4 py-2 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Elevador</th>
+                <th className={`px-4 py-2 text-left text-xs font-medium ${isDark ? 'text-gray-300' : 'text-gray-500'}`}>Usuario</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className={`divide-y ${isDark ? 'divide-gray-700' : 'divide-gray-200'}`}>
               {stats.eventos.ultimos.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="px-4 py-4 text-center text-text-muted text-sm">
+                  <td colSpan="4" className={`px-4 py-4 text-center ${isDark ? 'text-gray-400' : 'text-gray-500'} text-sm`}>
                     No hay eventos recientes
                   </td>
                 </tr>
               ) : (
                 stats.eventos.ultimos.map((evento, index) => (
-                  <tr key={index} className="hover:bg-gray-50">
-                    <td className="px-4 py-2 text-sm text-text-secondary">
+                  <tr key={index} className={`${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}`}>
+                    <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
                       {new Date(evento.fecha_hora || evento.created_at).toLocaleDateString()}
                     </td>
-                    <td className="px-4 py-2 text-sm">{evento.descripcion || evento.tipo || '-'}</td>
-                    <td className="px-4 py-2 text-sm">{evento.elevador?.nombre || evento.id_elevador || '-'}</td>
-                    <td className="px-4 py-2 text-sm">{evento.usuario || 'Sistema'}</td>
+                    <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
+                      {evento.descripcion || evento.tipo || '-'}
+                    </td>
+                    <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {evento.elevador?.nombre || evento.id_elevador || '-'}
+                    </td>
+                    <td className={`px-4 py-2 text-sm ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+                      {evento.usuario || 'Sistema'}
+                    </td>
                   </tr>
                 ))
               )}
@@ -708,21 +864,21 @@ const Dashboard = () => {
 
       {/* Estado del emulador */}
       {datosEmulador && (
-        <div className="bg-white rounded-xl shadow-card p-4">
+        <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} rounded-xl p-4`}>
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="flex items-center gap-4">
               <div className={`w-2 h-2 rounded-full ${datosEmulador ? 'bg-green-500' : 'bg-red-500'}`} />
-              <span className="text-sm font-medium text-text-secondary">
+              <span className={`text-sm font-medium ${isDark ? 'text-gray-100' : 'text-gray-700'}`}>
                 Emulador: {datosEmulador ? '🟢 Conectado' : '🔴 Desconectado'}
               </span>
-              <span className="text-xs text-text-muted">
+              <span className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                 Última actualización: {new Date(datosEmulador?.timestamp).toLocaleTimeString()}
               </span>
             </div>
             <button
               onClick={() => cargarEmulador(true)}
               disabled={loading.emulador}
-              className="text-xs text-cyan-500 hover:text-cyan-700 flex items-center gap-1 disabled:opacity-50"
+              className={`text-xs ${isDark ? 'text-cyan-400 hover:text-cyan-300' : 'text-cyan-500 hover:text-cyan-700'} flex items-center gap-1 disabled:opacity-50`}
             >
               {loading.emulador ? (
                 <span className="inline-block w-3 h-3 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />

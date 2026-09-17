@@ -1,11 +1,11 @@
 // frontend/src/components/pages/Configuraciones/ConfiguracionesSistema.jsx
 import React, { useState, useEffect } from 'react';
 import { configuracionService } from '../../../services/configuracionService';
+import { useSafeTheme } from '../../../hooks/useSafeTheme';
+import { API_BASE_URL } from '../../../config';
 
 const ConfiguracionesSistema = () => {
-  // Inicializar TODOS los campos con strings vacíos (NO undefined)
   const [formData, setFormData] = useState({
-    // Sistema
     nombre_sistema: '',
     nombre_corto_sistema: '',
     nombre_pestana: '',
@@ -18,8 +18,6 @@ const ConfiguracionesSistema = () => {
     fecha_version: '',
     tiempo_inactividad: '',
     imagen_fondo_login: '',
-    
-    // TODOS los nombres de interfaz
     nombre_interfaz_dashboard: '',
     nombre_interfaz_monitor: '',
     nombre_interfaz_interfaces_visuales: '',
@@ -57,19 +55,27 @@ const ConfiguracionesSistema = () => {
     nombre_interfaz_ms_parametros: '',
     nombre_interfaz_roles: '',
     nombre_interfaz_permisos: '',
-    
     nombre_interfaz_reportes_grupo: '',
     nombre_interfaz_reportes_alarmas: '',
     nombre_interfaz_reportes_eventos: '',
     nombre_interfaz_reportes_mantenimiento: '',
     nombre_interfaz_reportes_generales: '',
     nombre_interfaz_reportes_log: '',
-    nombre_interfaz_cabinas_catalogo: '',
+    nombre_interfaz_catalogo_cabinas: '',
+    nombre_interfaz_perfil: '',
+    nombre_interfaz_notificaciones: '',
+    nombre_interfaz_vistas: '',
+    nombre_interfaz_iconos: '',
+    nombre_interfaz_cambiar_contrasena: '',
+    nombre_interfaz_estilos: '',
   });
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState(null);
   const [uploading, setUploading] = useState(false);
+
+  const { temaActual } = useSafeTheme();
+  const isDark = temaActual === 'oscuro';
 
   useEffect(() => {
     cargarConfiguraciones();
@@ -79,12 +85,8 @@ const ConfiguracionesSistema = () => {
     setLoading(true);
     try {
       const data = await configuracionService.getSistema();
-      // console.log('🔍 TODOS los datos recibidos de getSistema():', data);
-      // console.log('🔍 Keys del objeto data:', Object.keys(data));
-
       setFormData(prev => ({
         ...prev,
-        // Sistema
         nombre_sistema: data.nombre_sistema || '',
         nombre_corto_sistema: data.nombre_corto_sistema || '',
         nombre_pestana: data.nombre_pestana || '',
@@ -97,8 +99,6 @@ const ConfiguracionesSistema = () => {
         fecha_version: data.fecha_version || '',
         tiempo_inactividad: data.tiempo_inactividad || '30',
         imagen_fondo_login: data.imagen_fondo_login || '',
-        
-        // TODOS los nombres de interfaz (con sus valores por defecto)
         nombre_interfaz_dashboard: data.nombre_interfaz_dashboard || 'Dashboard',
         nombre_interfaz_monitor: data.nombre_interfaz_monitor || 'Monitor SCADA',
         nombre_interfaz_interfaces_visuales: data.nombre_interfaz_interfaces_visuales || 'Interfaces Visuales',
@@ -127,7 +127,7 @@ const ConfiguracionesSistema = () => {
         nombre_interfaz_catalogo_usuarios: data.nombre_interfaz_catalogo_usuarios || 'Usuarios',
         nombre_interfaz_catalogo_roles: data.nombre_interfaz_catalogo_roles || 'Roles',
         nombre_interfaz_catalogo_permisos: data.nombre_interfaz_catalogo_permisos || 'Permisos',
-        nombre_interfaz_interfaces_graficas: data.nombre_interfaz_interfaces_graficas || 'Interfaces Gráficas2',
+        nombre_interfaz_interfaces_graficas: data.nombre_interfaz_interfaces_graficas || 'Interfaces Gráficas',
         nombre_interfaz_elevadores_graficos: data.nombre_interfaz_elevadores_graficos || 'Elevadores Gráficos',
         nombre_interfaz_cabinas_graficos: data.nombre_interfaz_cabinas_graficos || 'Cabinas Gráficos',
         nombre_interfaz_variables_scada: data.nombre_interfaz_variables_scada || 'Variables SCADA',
@@ -136,15 +136,19 @@ const ConfiguracionesSistema = () => {
         nombre_interfaz_ms_parametros: data.nombre_interfaz_ms_parametros || 'MS Parámetros',
         nombre_interfaz_roles: data.nombre_interfaz_roles || 'Roles',
         nombre_interfaz_permisos: data.nombre_interfaz_permisos || 'Permisos',
-
         nombre_interfaz_reportes_grupo: data.nombre_interfaz_reportes_grupo || 'Reportes',
         nombre_interfaz_reportes_alarmas: data.nombre_interfaz_reportes_alarmas || 'Alarmas',
         nombre_interfaz_reportes_eventos: data.nombre_interfaz_reportes_eventos || 'Eventos',
         nombre_interfaz_reportes_mantenimiento: data.nombre_interfaz_reportes_mantenimiento || 'Mantenimiento',
         nombre_interfaz_reportes_generales: data.nombre_interfaz_reportes_generales || 'Reportes',
         nombre_interfaz_reportes_log: data.nombre_interfaz_reportes_log || 'Log',
-        nombre_interfaz_cabinas_catalogo: data.nombre_interfaz_cabinas_catalogo || 'Cabinas',
         nombre_interfaz_catalogo_cabinas: data.nombre_interfaz_catalogo_cabinas || 'Cabinas',
+        nombre_interfaz_perfil: data.nombre_interfaz_perfil || 'Perfil',
+        nombre_interfaz_notificaciones: data.nombre_interfaz_notificaciones || 'Notificaciones',
+        nombre_interfaz_vistas: data.nombre_interfaz_vistas || 'Vistas',
+        nombre_interfaz_iconos: data.nombre_interfaz_iconos || 'Íconos',
+        nombre_interfaz_cambiar_contrasena: data.nombre_interfaz_cambiar_contrasena || 'Cambiar Contraseña',
+        nombre_interfaz_estilos: data.nombre_interfaz_estilos || 'Estilos',
       }));
     } catch (error) {
       console.error('Error cargando configuraciones:', error);
@@ -167,8 +171,8 @@ const ConfiguracionesSistema = () => {
       const formDataFile = new FormData();
       formDataFile.append('file', file);
       
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5290/api';
-      const response = await fetch(`${API_URL}/configuraciones/upload-imagen`, {
+      // const response = await fetch('http://localhost:8000/api/configuraciones/upload-imagen', {
+      const response = await fetch(`${API_BASE_URL}/api/configuraciones/upload-imagen`, {
         method: 'POST',
         body: formDataFile,
         headers: {
@@ -180,7 +184,7 @@ const ConfiguracionesSistema = () => {
       if (response.ok) {
         setFormData(prev => ({
           ...prev,
-          [fieldName]: `${API_URL.replace('/api', '')}${data.url}`,
+          [fieldName]: `http://localhost:8000${data.url}`,
         }));
         setMessage({ type: 'success', text: 'Imagen subida correctamente' });
       } else {
@@ -197,7 +201,7 @@ const ConfiguracionesSistema = () => {
 
   const renderImageUpload = (fieldName, label, currentValue) => (
     <div>
-      <label className="block text-sm font-medium text-text-secondary mb-1">
+      <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
         {label}
       </label>
       <div className="flex items-center gap-4">
@@ -206,7 +210,11 @@ const ConfiguracionesSistema = () => {
           name={fieldName}
           value={currentValue || ''}
           onChange={handleChange}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm"
+          className={`flex-1 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm ${
+            isDark 
+              ? 'bg-gray-700 border-gray-600 text-gray-100' 
+              : 'bg-white border-gray-300 text-gray-800'
+          }`}
           placeholder="URL de la imagen o sube una"
         />
         <button
@@ -245,13 +253,11 @@ const ConfiguracionesSistema = () => {
     try {
       await configuracionService.updateSistema(formData);
       
-      // ✅ Disparar evento para que Sidebar se actualice
       const event = new CustomEvent('nombresInterfazActualizados', {
         detail: { nombres: formData }
       });
       window.dispatchEvent(event);
       
-      // ✅ Actualizar título y favicon
       const config = await configuracionService.getSistemaPublic();
       if (config.nombre_pestana) {
         document.title = config.nombre_pestana;
@@ -266,7 +272,6 @@ const ConfiguracionesSistema = () => {
       setMessage({ type: 'success', text: 'Configuración del sistema guardada correctamente' });
       await cargarConfiguraciones();
       
-      // ✅ Recargar la página para que Sidebar tome los nuevos nombres
       window.location.reload();
       
     } catch (error) {
@@ -280,15 +285,14 @@ const ConfiguracionesSistema = () => {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl shadow-card p-6 flex justify-center">
-        <span className="text-primary-500">Cargando configuración...</span>
+      <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl shadow-card p-6 flex justify-center`}>
+        <span className={isDark ? 'text-gray-400' : 'text-primary-500'}>Cargando configuración...</span>
       </div>
     );
   }
 
   return (
-
-    <div className="bg-white rounded-xl shadow-card p-6">
+    <div className={`${isDark ? 'bg-gray-800' : 'bg-white'} rounded-xl ${isDark ? 'shadow-lg shadow-black/50' : 'shadow-card'} p-6`}>
       {message && (
         <div className={`p-4 rounded-lg mb-4 ${message.type === 'success' ? 'bg-green-50 text-green-800 border border-green-200' : 'bg-red-50 text-red-800 border border-red-200'}`}>
           {message.text}
@@ -301,7 +305,7 @@ const ConfiguracionesSistema = () => {
         {/* Información del Sistema */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
               Nombre del Sistema
             </label>
             <input
@@ -309,11 +313,15 @@ const ConfiguracionesSistema = () => {
               name="nombre_sistema"
               value={formData.nombre_sistema || ''}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
               Nombre Corto del Sistema
             </label>
             <input
@@ -321,11 +329,15 @@ const ConfiguracionesSistema = () => {
               name="nombre_corto_sistema"
               value={formData.nombre_corto_sistema || ''}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
               Nombre de Pestaña (Título del navegador)
             </label>
             <input
@@ -333,10 +345,14 @@ const ConfiguracionesSistema = () => {
               name="nombre_pestana"
               value={formData.nombre_pestana || ''}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`}
               placeholder="Ej: SmartLift SCADA"
             />
-            <p className="text-xs text-text-muted mt-1">
+            <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
               Este nombre aparecerá en la pestaña del navegador
             </p>
           </div>
@@ -352,7 +368,7 @@ const ConfiguracionesSistema = () => {
         {/* Versión */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
               Versión del Sistema
             </label>
             <input
@@ -360,12 +376,16 @@ const ConfiguracionesSistema = () => {
               name="version_sistema"
               value={formData.version_sistema || ''}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`}
               placeholder="v1.0.0"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
               Fecha de la Versión
             </label>
             <input
@@ -373,11 +393,15 @@ const ConfiguracionesSistema = () => {
               name="fecha_version"
               value={formData.fecha_version || ''}
               onChange={handleChange}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`}
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-text-secondary mb-1">
+            <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>
               Tiempo de Inactividad (minutos)
             </label>
             <input
@@ -387,202 +411,426 @@ const ConfiguracionesSistema = () => {
               onChange={handleChange}
               min="1"
               max="120"
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500"
+              className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`}
             />
-            <p className="text-xs text-text-muted mt-1">
+            <p className={`text-xs mt-1 ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
               Tiempo de inactividad antes de cerrar sesión automáticamente (1-120 minutos)
             </p>
           </div>
         </div>
         
         {/* Nombres de Interfaces */}
-        <div className="pt-4 border-t border-gray-200">
-          <h4 className="text-sm font-medium text-text-secondary mb-3">Nombres de Interfaces</h4>
+        <div className={`pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+          <h4 className={`text-sm font-medium mb-3 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Nombres de Interfaces</h4>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {/* Sistema */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Dashboard</label>
-              <input type="text" name="nombre_interfaz_dashboard" value={formData.nombre_interfaz_dashboard || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Dashboard</label>
+              <input type="text" name="nombre_interfaz_dashboard" value={formData.nombre_interfaz_dashboard || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Monitor SCADA</label>
-              <input type="text" name="nombre_interfaz_monitor" value={formData.nombre_interfaz_monitor || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Monitor SCADA</label>
+              <input type="text" name="nombre_interfaz_monitor" value={formData.nombre_interfaz_monitor || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Interfaces Visuales</label>
-              <input type="text" name="nombre_interfaz_interfaces_visuales" value={formData.nombre_interfaz_interfaces_visuales || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Interfaces Visuales</label>
+              <input type="text" name="nombre_interfaz_interfaces_visuales" value={formData.nombre_interfaz_interfaces_visuales || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Visualización</label>
-              <input type="text" name="nombre_interfaz_visualizacion" value={formData.nombre_interfaz_visualizacion || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Visualización</label>
+              <input type="text" name="nombre_interfaz_visualizacion" value={formData.nombre_interfaz_visualizacion || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
 
             {/* Módulos principales */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Elevadores</label>
-              <input type="text" name="nombre_interfaz_elevadores" value={formData.nombre_interfaz_elevadores || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Elevadores</label>
+              <input type="text" name="nombre_interfaz_elevadores" value={formData.nombre_interfaz_elevadores || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Alarmas</label>
-              <input type="text" name="nombre_interfaz_alarmas" value={formData.nombre_interfaz_alarmas || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Alarmas</label>
+              <input type="text" name="nombre_interfaz_alarmas" value={formData.nombre_interfaz_alarmas || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Eventos</label>
-              <input type="text" name="nombre_interfaz_eventos" value={formData.nombre_interfaz_eventos || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Eventos</label>
+              <input type="text" name="nombre_interfaz_eventos" value={formData.nombre_interfaz_eventos || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Mantenimiento</label>
-              <input type="text" name="nombre_interfaz_mantenimiento" value={formData.nombre_interfaz_mantenimiento || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Mantenimiento</label>
+              <input type="text" name="nombre_interfaz_mantenimiento" value={formData.nombre_interfaz_mantenimiento || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Reportes</label>
-              <input type="text" name="nombre_interfaz_reportes" value={formData.nombre_interfaz_reportes || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Reportes</label>
+              <input type="text" name="nombre_interfaz_reportes" value={formData.nombre_interfaz_reportes || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Usuarios</label>
-              <input type="text" name="nombre_interfaz_usuarios" value={formData.nombre_interfaz_usuarios || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Usuarios</label>
+              <input type="text" name="nombre_interfaz_usuarios" value={formData.nombre_interfaz_usuarios || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Privilegios</label>
-              <input type="text" name="nombre_interfaz_privilegios" value={formData.nombre_interfaz_privilegios || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Privilegios</label>
+              <input type="text" name="nombre_interfaz_privilegios" value={formData.nombre_interfaz_privilegios || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Configuraciones</label>
-              <input type="text" name="nombre_interfaz_configuraciones" value={formData.nombre_interfaz_configuraciones || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Configuraciones</label>
+              <input type="text" name="nombre_interfaz_configuraciones" value={formData.nombre_interfaz_configuraciones || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Integraciones</label>
-              <input type="text" name="nombre_interfaz_integraciones" value={formData.nombre_interfaz_integraciones || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Integraciones</label>
+              <input type="text" name="nombre_interfaz_integraciones" value={formData.nombre_interfaz_integraciones || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
 
             {/* Catálogos */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Catálogo</label>
-              <input type="text" name="nombre_interfaz_catalogo" value={formData.nombre_interfaz_catalogo || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Catálogo</label>
+              <input type="text" name="nombre_interfaz_catalogo" value={formData.nombre_interfaz_catalogo || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Catálogo ALBA</label>
-              <input type="text" name="nombre_interfaz_catalogo_alba" value={formData.nombre_interfaz_catalogo_alba || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Catálogo ALBA</label>
+              <input type="text" name="nombre_interfaz_catalogo_alba" value={formData.nombre_interfaz_catalogo_alba || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Catálogos</label>
-              <input type="text" name="nombre_interfaz_catalogos" value={formData.nombre_interfaz_catalogos || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Catálogos</label>
+              <input type="text" name="nombre_interfaz_catalogos" value={formData.nombre_interfaz_catalogos || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Empresas</label>
-              <input type="text" name="nombre_interfaz_empresas" value={formData.nombre_interfaz_empresas || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Empresas</label>
+              <input type="text" name="nombre_interfaz_empresas" value={formData.nombre_interfaz_empresas || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Edificios</label>
-              <input type="text" name="nombre_interfaz_edificios" value={formData.nombre_interfaz_edificios || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Edificios</label>
+              <input type="text" name="nombre_interfaz_edificios" value={formData.nombre_interfaz_edificios || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Catálogo - Cabinas</label>
-              <input type="text" name="nombre_interfaz_catalogo_cabinas" value={formData.nombre_interfaz_catalogo_cabinas || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Catálogo - Cabinas</label>
+              <input type="text" name="nombre_interfaz_catalogo_cabinas" value={formData.nombre_interfaz_catalogo_cabinas || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Controladores</label>
-              <input type="text" name="nombre_interfaz_controladores" value={formData.nombre_interfaz_controladores || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Controladores</label>
+              <input type="text" name="nombre_interfaz_controladores" value={formData.nombre_interfaz_controladores || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
 
             {/* Parámetros */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Parámetros Elevador</label>
-              <input type="text" name="nombre_interfaz_parametros_elevador" value={formData.nombre_interfaz_parametros_elevador || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Parámetros Elevador</label>
+              <input type="text" name="nombre_interfaz_parametros_elevador" value={formData.nombre_interfaz_parametros_elevador || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Parámetros Cabina</label>
-              <input type="text" name="nombre_interfaz_parametros_cabina" value={formData.nombre_interfaz_parametros_cabina || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Parámetros Cabina</label>
+              <input type="text" name="nombre_interfaz_parametros_cabina" value={formData.nombre_interfaz_parametros_cabina || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
 
             {/* Catálogo - subitems */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Catálogo - Elevadores</label>
-              <input type="text" name="nombre_interfaz_catalogo_elevadores" value={formData.nombre_interfaz_catalogo_elevadores || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Catálogo - Elevadores</label>
+              <input type="text" name="nombre_interfaz_catalogo_elevadores" value={formData.nombre_interfaz_catalogo_elevadores || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Catálogo - Controladores</label>
-              <input type="text" name="nombre_interfaz_catalogo_controladores" value={formData.nombre_interfaz_catalogo_controladores || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Catálogo - Controladores</label>
+              <input type="text" name="nombre_interfaz_catalogo_controladores" value={formData.nombre_interfaz_catalogo_controladores || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Catálogo - Variables SCADA</label>
-              <input type="text" name="nombre_interfaz_catalogo_variables_scada" value={formData.nombre_interfaz_catalogo_variables_scada || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Catálogo - Variables SCADA</label>
+              <input type="text" name="nombre_interfaz_catalogo_variables_scada" value={formData.nombre_interfaz_catalogo_variables_scada || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Catálogo - Usuarios</label>
-              <input type="text" name="nombre_interfaz_catalogo_usuarios" value={formData.nombre_interfaz_catalogo_usuarios || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Catálogo - Usuarios</label>
+              <input type="text" name="nombre_interfaz_catalogo_usuarios" value={formData.nombre_interfaz_catalogo_usuarios || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Catálogo - Roles</label>
-              <input type="text" name="nombre_interfaz_catalogo_roles" value={formData.nombre_interfaz_catalogo_roles || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Catálogo - Roles</label>
+              <input type="text" name="nombre_interfaz_catalogo_roles" value={formData.nombre_interfaz_catalogo_roles || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Catálogo - Permisos</label>
-              <input type="text" name="nombre_interfaz_catalogo_permisos" value={formData.nombre_interfaz_catalogo_permisos || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Catálogo - Permisos</label>
+              <input type="text" name="nombre_interfaz_catalogo_permisos" value={formData.nombre_interfaz_catalogo_permisos || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
 
             {/* Reportes - Grupo */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Reportes (Grupo)</label>
-              <input type="text" name="nombre_interfaz_reportes_grupo" value={formData.nombre_interfaz_reportes_grupo || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Reportes (Grupo)</label>
+              <input type="text" name="nombre_interfaz_reportes_grupo" value={formData.nombre_interfaz_reportes_grupo || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Reportes - Alarmas</label>
-              <input type="text" name="nombre_interfaz_reportes_alarmas" value={formData.nombre_interfaz_reportes_alarmas || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Reportes - Alarmas</label>
+              <input type="text" name="nombre_interfaz_reportes_alarmas" value={formData.nombre_interfaz_reportes_alarmas || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Reportes - Eventos</label>
-              <input type="text" name="nombre_interfaz_reportes_eventos" value={formData.nombre_interfaz_reportes_eventos || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Reportes - Eventos</label>
+              <input type="text" name="nombre_interfaz_reportes_eventos" value={formData.nombre_interfaz_reportes_eventos || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Reportes - Mantenimiento</label>
-              <input type="text" name="nombre_interfaz_reportes_mantenimiento" value={formData.nombre_interfaz_reportes_mantenimiento || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Reportes - Mantenimiento</label>
+              <input type="text" name="nombre_interfaz_reportes_mantenimiento" value={formData.nombre_interfaz_reportes_mantenimiento || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Reportes - Generales</label>
-              <input type="text" name="nombre_interfaz_reportes_generales" value={formData.nombre_interfaz_reportes_generales || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Reportes - Generales</label>
+              <input type="text" name="nombre_interfaz_reportes_generales" value={formData.nombre_interfaz_reportes_generales || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Reportes - Log</label>
-              <input type="text" name="nombre_interfaz_reportes_log" value={formData.nombre_interfaz_reportes_log || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Reportes - Log</label>
+              <input type="text" name="nombre_interfaz_reportes_log" value={formData.nombre_interfaz_reportes_log || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
 
             {/* Otros */}
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Interfaces Gráficas</label>
-              <input type="text" name="nombre_interfaz_interfaces_graficas" value={formData.nombre_interfaz_interfaces_graficas || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Interfaces Gráficas</label>
+              <input type="text" name="nombre_interfaz_interfaces_graficas" value={formData.nombre_interfaz_interfaces_graficas || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Elevadores Gráficos</label>
-              <input type="text" name="nombre_interfaz_elevadores_graficos" value={formData.nombre_interfaz_elevadores_graficos || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Elevadores Gráficos</label>
+              <input type="text" name="nombre_interfaz_elevadores_graficos" value={formData.nombre_interfaz_elevadores_graficos || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Cabinas Gráficos</label>
-              <input type="text" name="nombre_interfaz_cabinas_graficos" value={formData.nombre_interfaz_cabinas_graficos || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Cabinas Gráficos</label>
+              <input type="text" name="nombre_interfaz_cabinas_graficos" value={formData.nombre_interfaz_cabinas_graficos || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Variables SCADA</label>
-              <input type="text" name="nombre_interfaz_variables_scada" value={formData.nombre_interfaz_variables_scada || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Variables SCADA</label>
+              <input type="text" name="nombre_interfaz_variables_scada" value={formData.nombre_interfaz_variables_scada || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Administración IG</label>
-              <input type="text" name="nombre_interfaz_configuracion_ig" value={formData.nombre_interfaz_configuracion_ig || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Administración IG</label>
+              <input type="text" name="nombre_interfaz_configuracion_ig" value={formData.nombre_interfaz_configuracion_ig || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Vinculación Parámetros</label>
-              <input type="text" name="nombre_interfaz_vinculacion_parametros" value={formData.nombre_interfaz_vinculacion_parametros || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Vinculación Parámetros</label>
+              <input type="text" name="nombre_interfaz_vinculacion_parametros" value={formData.nombre_interfaz_vinculacion_parametros || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">MS Parámetros</label>
-              <input type="text" name="nombre_interfaz_ms_parametros" value={formData.nombre_interfaz_ms_parametros || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>MS Parámetros</label>
+              <input type="text" name="nombre_interfaz_ms_parametros" value={formData.nombre_interfaz_ms_parametros || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Roles</label>
-              <input type="text" name="nombre_interfaz_roles" value={formData.nombre_interfaz_roles || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Roles</label>
+              <input type="text" name="nombre_interfaz_roles" value={formData.nombre_interfaz_roles || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
             <div>
-              <label className="block text-sm font-medium text-text-secondary mb-1">Permisos</label>
-              <input type="text" name="nombre_interfaz_permisos" value={formData.nombre_interfaz_permisos || ''} onChange={handleChange} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500" />
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Permisos</label>
+              <input type="text" name="nombre_interfaz_permisos" value={formData.nombre_interfaz_permisos || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Perfil</label>
+              <input type="text" name="nombre_interfaz_perfil" value={formData.nombre_interfaz_perfil || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Notificaciones</label>
+              <input type="text" name="nombre_interfaz_notificaciones" value={formData.nombre_interfaz_notificaciones || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Vistas</label>
+              <input type="text" name="nombre_interfaz_vistas" value={formData.nombre_interfaz_vistas || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Íconos</label>
+              <input type="text" name="nombre_interfaz_iconos" value={formData.nombre_interfaz_iconos || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Cambiar Contraseña</label>
+              <input type="text" name="nombre_interfaz_cambiar_contrasena" value={formData.nombre_interfaz_cambiar_contrasena || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
+            </div>
+            <div>
+              <label className={`block text-sm font-medium mb-1 ${isDark ? 'text-gray-300' : 'text-text-secondary'}`}>Estilos</label>
+              <input type="text" name="nombre_interfaz_estilos" value={formData.nombre_interfaz_estilos || ''} onChange={handleChange} className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
+                isDark 
+                  ? 'bg-gray-700 border-gray-600 text-gray-100' 
+                  : 'bg-white border-gray-300 text-gray-800'
+              }`} />
             </div>
           </div>
         </div>
@@ -590,7 +838,11 @@ const ConfiguracionesSistema = () => {
         <button
           type="submit"
           disabled={saving}
-          className="bg-primary-500 text-white px-6 py-2 rounded-lg hover:bg-primary-700 transition-colors disabled:opacity-50"
+          className={`px-6 py-2 rounded-lg transition-colors disabled:opacity-50 shadow-sm ${
+            isDark 
+              ? 'bg-gray-700 text-gray-100 hover:bg-gray-600 border border-gray-600' 
+              : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300 shadow-md'
+          }`}
         >
           {saving ? 'Guardando...' : 'Guardar Cambios'}
         </button>
