@@ -7,7 +7,7 @@ export const empresaService = {
         if (params.activo !== undefined) queryParams.append('activo', params.activo);
         if (params.limit) queryParams.append('limit', params.limit);
         
-        const response = await api.get(`/empresa/?${queryParams.toString()}`);
+        const response = await api.get(`/empresas/?${queryParams.toString()}`);
         const paginated = response.data?.data;
         return {
             data: paginated?.data || [],
@@ -19,27 +19,27 @@ export const empresaService = {
     },
 
     getById: async (id) => {
-        const response = await api.get(`/empresa/${id}`);
+        const response = await api.get(`/empresas/${id}`);
         return response.data;
     },
 
     create: async (data) => {
-        const response = await api.post('/empresa/', data);
+        const response = await api.post('/empresas/', data);
         return response.data;
     },
 
     update: async (id, data) => {
-        const response = await api.put(`/empresa/${id}`, data);
+        const response = await api.put(`/empresas/${id}`, data);
         return response.data;
     },
 
     delete: async (id) => {
-        const response = await api.delete(`/empresa/${id}`);
+        const response = await api.delete(`/empresas/${id}`);
         return response.data;
     },
 
     getFirst: async () => {
-        const response = await api.get('/empresa/');
+        const response = await api.get('/empresas/');
         if (response.data && response.data.length > 0) {
             return response.data[0];
         }

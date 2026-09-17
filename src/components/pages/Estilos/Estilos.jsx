@@ -627,7 +627,7 @@ const Estilos = () => {
     setCargandoTemas(true);
     try {
       const response = await api.get('/temas/');
-      setTemasBD(response.data);
+      setTemasBD(response.data.data || []);
     } catch (error) {
       console.error('Error cargando temas desde BD:', error);
     } finally {
@@ -733,7 +733,7 @@ const Estilos = () => {
 
   //  getTemasList - ahora usa temasBD del estado
   const getTemasList = () => {
-    if (usarTemasBD && temasBD.length > 0) {
+    if (usarTemasBD && Array.isArray(temasBD) && temasBD.length > 0) {
       // console.log(' temasBD raw:', temasBD);
       return temasBD.map(tema => {
         // console.log(' tema.sidebar:', tema.sidebar);
@@ -1869,7 +1869,7 @@ const Estilos = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {temasList.map((tema) => {
             const isActive = temaActual === tema.key;
-            const temaBD = usarTemasBD ? temasBD.find(t => t.clave === tema.key) : null;
+            const temaBD = usarTemasBD && Array.isArray(temasBD) ? temasBD.find(t => t.clave === tema.key) : null;
             const puedeEditarTema = puedeEditar('estilos') && usarTemasBD && temaBD;
             const puedeEliminarTema = puedeEliminar('estilos') && usarTemasBD && temaBD && !isActive;
             

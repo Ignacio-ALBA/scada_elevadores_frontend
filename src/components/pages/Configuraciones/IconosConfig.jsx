@@ -83,9 +83,9 @@ const IconosConfig = () => {
   const cargarIconos = async () => {
     setLoading(true);
     try {
-      // const response = await api.get('/configuraciones/iconos');
       const response = await api.get('/configuraciones/iconos-sistema');
-      setIconos(response.data || {});
+      // Extraer datos desde response.data.data (nivel correcto dentro de ResponseDto)
+      setIconos(response.data?.data || {});
     } catch (error) {
       console.error('Error cargando iconos:', error);
       setMessage({ type: 'error', text: 'Error al cargar los iconos' });
@@ -97,7 +97,6 @@ const IconosConfig = () => {
   const handleGuardarIcono = async (moduloClave, tipo, valor) => {
     setSaving(true);
     try {
-      // await api.post('/configuraciones/iconos', {
       await api.post('/configuraciones/iconos-sistema', {
         modulo_clave: moduloClave,
         tipo: tipo,
@@ -141,12 +140,11 @@ const IconosConfig = () => {
     formData.append('file', file);
 
     try {
-      // const response = await api.post('/configuraciones/iconos/upload', formData, {
       const response = await api.post('/configuraciones/iconos-sistema/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
       });
       
-      const imageUrl = response.data.url;
+      const imageUrl = response.data?.data?.url || response.data?.url;
       await handleGuardarIcono(moduloClave, 'imagen', imageUrl);
       
     } catch (error) {

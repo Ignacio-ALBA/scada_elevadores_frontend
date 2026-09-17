@@ -32,10 +32,11 @@ const CatalogoControladores = ({ canEdit }) => {
     setLoading(true);
     try {
       const response = await api.get('/controladores/');
-      setData(response.data);
+      setData(response.data.data || []);
     } catch (error) {
       console.error('Error cargando controladores:', error);
       setMessage({ type: 'error', text: 'Error al cargar los controladores' });
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -44,7 +45,7 @@ const CatalogoControladores = ({ canEdit }) => {
   const cargarEdificios = async () => {
     try {
       const response = await api.get('/edificios/');
-      setEdificios(response.data);
+      setEdificios(response.data.data || []);
     } catch (error) {
       console.error('Error cargando edificios:', error);
     }

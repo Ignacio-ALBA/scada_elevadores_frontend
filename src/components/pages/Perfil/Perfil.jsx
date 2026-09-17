@@ -121,7 +121,7 @@ const Perfil = ({ isDark = null }) => {
       // 4. Actualizar preview con la foto nueva
       if (formData.foto_perfil instanceof File) {
         const userResponse = await api.get('/auth/me');
-        setFotoPreview(userResponse.data.foto_perfil);
+        setFotoPreview(userResponse.data.data?.foto_perfil || userResponse.data.foto_perfil);
       }
       
     } catch (error) {

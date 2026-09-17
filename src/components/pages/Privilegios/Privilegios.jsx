@@ -63,12 +63,13 @@ const Privilegios = () => {
     setLoading(true);
     try {
       const response = await api.get('/roles/');
+      const rolesArray = response.data.data || [];
       
-      if (response.data && response.data.length > 0) {
-        const rolesData = response.data.map(rol => ({
-          id: rol.id_rol || rol.id,
+      if (rolesArray && rolesArray.length > 0) {
+        const rolesData = rolesArray.map(rol => ({
+          id: rol.id_rol || rol.idRol,
           nombre: rol.nombre,
-          nivel: rol.nivel_jerarquia || rol.nivel
+          nivel: rol.nivel_jerarquia || rol.nivelJerarquia
         }));
         setRoles(rolesData);
         setSelectedRolId(rolesData[0].id);
@@ -110,8 +111,9 @@ const Privilegios = () => {
     try {
       const response = await api.get(`/permisos/rol/${rolId}`);
       
+      const permisosArray = response.data.data || [];
       const modulos = {};
-      response.data.forEach(permiso => {
+      permisosArray.forEach(permiso => {
         if (permiso.modulo_clave) {
           modulos[permiso.modulo_clave] = {
             ver: permiso.puede_ver,

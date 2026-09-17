@@ -39,10 +39,11 @@ const CatalogoRoles = ({ canEdit }) => {
     setLoading(true);
     try {
       const response = await api.get('/roles/');
-      setData(response.data);
+      setData(response.data.data || []);
     } catch (error) {
       console.error('Error cargando roles:', error);
       setMessage({ type: 'error', text: 'Error al cargar los roles' });
+      setData([]);
     } finally {
       setLoading(false);
     }

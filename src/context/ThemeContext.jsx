@@ -685,12 +685,12 @@ export const ThemeProvider = ({ children }) => {
       const response = await api.get('/temas/configuracion');
       // console.log(' [ThemeContext] Configuración recibida:', response.data);
       
-      const usarBD = response.data.usar_temas_bd !== undefined ? response.data.usar_temas_bd : true;
+      const usarBD = response.data?.data?.usar_temas_bd !== undefined ? response.data.data.usar_temas_bd : true;
       setUsarTemasBD(usarBD);
       localStorage.setItem('usarTemasBD', JSON.stringify(usarBD));
       return usarBD;
     } catch (error) {
-      console.error('❌ [ThemeContext] Error cargando configuración:', error);
+      // Error silencioso - usar fallback
       setUsarTemasBD(true);
       localStorage.setItem('usarTemasBD', JSON.stringify(true));
       return true;
@@ -846,7 +846,7 @@ export const ThemeProvider = ({ children }) => {
       if (tieneToken()) {
         // console.log(' [ThemeContext] Obteniendo tema del usuario desde BD...');
         const response = await api.get('/preferencias/tema');
-        const tema = response.data?.tema || 'default';
+        const tema = response.data?.data?.tema || 'default';
         // console.log(' [ThemeContext] Tema del usuario desde BD:', tema);
         
         //  Guardar en localStorage para futuras cargas rápidas
@@ -866,7 +866,7 @@ export const ThemeProvider = ({ children }) => {
       
       return 'default';
     } catch (error) {
-      console.error('❌ [ThemeContext] Error obteniendo tema del usuario:', error);
+      // Error silencioso - usar fallback
       const fallback = localStorage.getItem('tema_actual') || 'default';
       // console.log(' [ThemeContext] Fallback a localStorage:', fallback);
       return fallback;

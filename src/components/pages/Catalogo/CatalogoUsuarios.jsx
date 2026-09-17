@@ -15,10 +15,11 @@ const CatalogoUsuarios = ({ canEdit }) => {
     setLoading(true);
     try {
       const response = await api.get('/usuarios/');
-      setData(response.data);
+      setData(response.data.data || []);
     } catch (error) {
       console.error('Error cargando usuarios:', error);
       setMessage({ type: 'error', text: 'Error al cargar los usuarios' });
+      setData([]);
     } finally {
       setLoading(false);
     }

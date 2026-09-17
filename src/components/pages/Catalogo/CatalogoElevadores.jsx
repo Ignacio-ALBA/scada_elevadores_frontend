@@ -15,10 +15,11 @@ const CatalogoElevadores = ({ canEdit }) => {
     setLoading(true);
     try {
       const response = await api.get('/elevadores/');
-      setData(response.data);
+      setData(response.data.data || []);
     } catch (error) {
       console.error('Error cargando elevadores:', error);
       setMessage({ type: 'error', text: 'Error al cargar los elevadores' });
+      setData([]);
     } finally {
       setLoading(false);
     }

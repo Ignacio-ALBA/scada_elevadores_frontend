@@ -412,9 +412,10 @@ const Sidebar = ({ isOpen, onToggle }) => {
     const cargarIconos = async () => {
       try {
         const response = await api.get('/configuraciones/iconos-sistema');
-        setIconosPersonalizados(response.data || {});
+        // Extraer datos desde response.data.data (nivel correcto dentro de ResponseDto)
+        setIconosPersonalizados(response.data?.data || {});
       } catch (error) {
-        console.error('Error cargando iconos del sistema:', error);
+        // Error silencioso - usar iconos por defecto
       }
     };
     cargarIconos();
@@ -500,8 +501,13 @@ const Sidebar = ({ isOpen, onToggle }) => {
   useEffect(() => {
     const cargarInterfaces = async () => {
       try {
-        const data = await interfaceVisualService.getAll({ activo: true });
-        const items = data.map(iface => ({
+        const response = await interfaceVisualService.getAll({ activo: true });
+        // Extraer el array real (response puede ser el array directo o envuelto en data.data.data)
+        const interfacesList = Array.isArray(response) 
+          ? response 
+          : response?.data?.data || response?.data || [];
+        
+        const items = interfacesList.map(iface => ({
           clave: `interface_${iface.id_interface}`,
           nombre: iface.titulo || iface.nombre,
           ruta: `/interfaces/${iface.id_interface}`,
@@ -510,7 +516,7 @@ const Sidebar = ({ isOpen, onToggle }) => {
         }));
         setInterfacesDinamicas(items);
       } catch (error) {
-        console.error('Error cargando interfaces:', error);
+        // Error silencioso - sin interfaces dinámicas
       }
     };
     cargarInterfaces();

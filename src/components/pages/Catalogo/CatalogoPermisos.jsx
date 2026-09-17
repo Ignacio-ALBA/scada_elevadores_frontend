@@ -20,23 +20,65 @@ const CatalogoPermisos = ({ canEdit }) => {
     cargarDatos();
   }, []);
 
+  // 🔄 Cuando los roles se cargan, selecciona el primero que tenga permisos
+  useEffect(() => {
+    if (Array.isArray(roles) && roles.length > 0 && !selectedRol) {
+      // Preferir rol 1 (SuperAdmin) que siempre tiene permisos
+      const rolConPermisos = roles.find(r => r.idRol === 1) || roles[0];
+      console.log('🔄 Seleccionando rol con permisos:', rolConPermisos.idRol, rolConPermisos.nombre);
+      setSelectedRol(rolConPermisos.idRol);
+    }
+  }, [roles]);
+
+  // 🔄 Cuando cambia el rol seleccionado, cargar permisos específicos
+  useEffect(() => {
+    if (selectedRol) {
+      cargarPermisosDelRol(selectedRol);
+    }
+  }, [selectedRol]);
+
   const cargarDatos = async () => {
     setLoading(true);
     try {
       const rolesResponse = await api.get('/roles/');
-      setRoles(rolesResponse.data);
       
-      const permisosResponse = await api.get('/permisos/');
-      setData(permisosResponse.data);
-      
-      if (rolesResponse.data.length > 0 && !selectedRol) {
-        setSelectedRol(rolesResponse.data[0].id_rol);
-      }
+      // El array real está en response.data.data.data
+      const rolesArray = rolesResponse.data?.data?.data || rolesResponse.data?.data || rolesResponse.data || [];
+      console.log('🔍 rolesArray cargados:', rolesArray.length, 'roles');
+      setRoles(rolesArray);
     } catch (error) {
-      console.error('Error cargando datos:', error);
-      setMessage({ type: 'error', text: 'Error al cargar los datos' });
+      console.error('Error cargando roles:', error);
+      setMessage({ type: 'error', text: 'Error al cargar los roles' });
+      setRoles([]);
+      setData([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const cargarPermisosDelRol = async (rolId) => {
+    try {
+      console.log('🔍 Cargando permisos para rol:', rolId);
+      const permisosResponse = await api.get(`/permisos/rol/${rolId}`);
+      console.log('🔍 permisosResponse completa:', permisosResponse);
+      console.log('🔍 permisosResponse.data:', permisosResponse.data);
+      
+      // El endpoint /permisos/rol/{id} retorna directamente un array en response.data.data
+      let permisosArray = [];
+      
+      if (Array.isArray(permisosResponse.data?.data)) {
+        permisosArray = permisosResponse.data.data;
+      } else if (Array.isArray(permisosResponse.data)) {
+        permisosArray = permisosResponse.data;
+      } else if (permisosResponse.data?.success && Array.isArray(permisosResponse.data?.data)) {
+        permisosArray = permisosResponse.data.data;
+      }
+      
+      console.log('🔍 permisosArray para rol', rolId, ':', Array.isArray(permisosArray) ? permisosArray.length : 'no es array', permisosArray);
+      setData(permisosArray);
+    } catch (error) {
+      console.error('Error cargando permisos del rol:', error);
+      setData([]);
     }
   };
 
@@ -47,19 +89,22 @@ const CatalogoPermisos = ({ canEdit }) => {
   const handleTogglePermiso = async (rolId, moduloId, campo) => {
     if (!canEdit) return;
     
-    const permiso = data.find(p => p.id_rol === rolId && p.id_modulo === moduloId);
+    const permiso = data.find(p => p.idRol === rolId && p.idModulo === moduloId);
     if (!permiso) return;
     
     const nuevoValor = !permiso[campo];
     
     try {
       setSaving(true);
+      // Convertir camelCase a snake_case para el backend
+      const campoSnakeCase = campo.replace(/([A-Z])/g, '_$1').toLowerCase();
+      
       await api.patch(`/permisos/${permiso.id}`, {
-        [campo]: nuevoValor
+        [campoSnakeCase]: nuevoValor
       });
       
       setData(data.map(p => 
-        p.id_rol === rolId && p.id_modulo === moduloId 
+        p.idRol === rolId && p.idModulo === moduloId 
           ? { ...p, [campo]: nuevoValor }
           : p
       ));
@@ -74,8 +119,9 @@ const CatalogoPermisos = ({ canEdit }) => {
     }
   };
 
-  const permisosPorRol = data.filter(p => p.id_rol === selectedRol);
-  const rolSeleccionado = roles.find(r => r.id_rol === selectedRol);
+  // Ya no necesitamos filtrar porque data ya contiene solo los permisos del rol seleccionado
+  const permisosPorRol = Array.isArray(data) ? data : [];
+  const rolSeleccionado = Array.isArray(roles) ? roles.find(r => r.idRol === selectedRol) : null;
 
   // ✅ Estilos para los botones de permisos según tema
   const getPermisoButtonClass = (tipo, valor) => {
@@ -132,11 +178,11 @@ const CatalogoPermisos = ({ canEdit }) => {
                   : 'bg-white border-gray-300 text-gray-700'
               }`}
             >
-              {roles.map((rol) => (
-                <option key={rol.id_rol} value={rol.id_rol}>
+              {Array.isArray(roles) ? roles.map((rol) => (
+                <option key={rol.idRol} value={rol.idRol}>
                   {rol.nombre} {rol.estado !== 'activo' ? `(${rol.estado})` : ''}
                 </option>
-              ))}
+              )) : null}
             </select>
           </div>
           <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
@@ -177,64 +223,64 @@ const CatalogoPermisos = ({ canEdit }) => {
                 permisosPorRol.map((permiso) => {
                   const buttonStyle = getPermisoButtonClass(
                     permiso.campo || 'ver', 
-                    permiso.puede_ver
+                    permiso.puedeVer
                   );
                   
                   return (
                     <tr key={permiso.id} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
                       <td className={`px-4 py-3 text-sm font-medium ${isDark ? 'text-gray-200' : 'text-text-secondary'}`}>
-                        {permiso.modulo_nombre || permiso.modulo}
+                        {permiso.nombreModulo || permiso.modulo}
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
-                          onClick={() => handleTogglePermiso(permiso.id_rol, permiso.id_modulo, 'puede_ver')}
+                          onClick={() => handleTogglePermiso(permiso.idRol, permiso.idModulo, 'puedeVer')}
                           disabled={!canEdit || saving}
                           className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                            permiso.puede_ver
+                            permiso.puedeVer
                               ? isDark ? 'bg-green-900/50 text-green-300 hover:bg-green-800/50' : 'bg-green-100 text-green-700 hover:bg-green-200'
                               : isDark ? 'bg-gray-700 text-gray-500 hover:bg-gray-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                           } ${!canEdit ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                         >
-                          {permiso.puede_ver ? '✅' : '❌'}
+                          {permiso.puedeVer ? '✅' : '❌'}
                         </button>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
-                          onClick={() => handleTogglePermiso(permiso.id_rol, permiso.id_modulo, 'puede_crear')}
+                          onClick={() => handleTogglePermiso(permiso.idRol, permiso.idModulo, 'puedeCrear')}
                           disabled={!canEdit || saving}
                           className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                            permiso.puede_crear
+                            permiso.puedeCrear
                               ? isDark ? 'bg-blue-900/50 text-blue-300 hover:bg-blue-800/50' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'
                               : isDark ? 'bg-gray-700 text-gray-500 hover:bg-gray-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                           } ${!canEdit ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                         >
-                          {permiso.puede_crear ? '✅' : '❌'}
+                          {permiso.puedeCrear ? '✅' : '❌'}
                         </button>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
-                          onClick={() => handleTogglePermiso(permiso.id_rol, permiso.id_modulo, 'puede_editar')}
+                          onClick={() => handleTogglePermiso(permiso.idRol, permiso.idModulo, 'puedeEditar')}
                           disabled={!canEdit || saving}
                           className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                            permiso.puede_editar
+                            permiso.puedeEditar
                               ? isDark ? 'bg-yellow-900/50 text-yellow-300 hover:bg-yellow-800/50' : 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
                               : isDark ? 'bg-gray-700 text-gray-500 hover:bg-gray-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                           } ${!canEdit ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                         >
-                          {permiso.puede_editar ? '✅' : '❌'}
+                          {permiso.puedeEditar ? '✅' : '❌'}
                         </button>
                       </td>
                       <td className="px-4 py-3 text-center">
                         <button
-                          onClick={() => handleTogglePermiso(permiso.id_rol, permiso.id_modulo, 'puede_eliminar')}
+                          onClick={() => handleTogglePermiso(permiso.idRol, permiso.idModulo, 'puedeEliminar')}
                           disabled={!canEdit || saving}
                           className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors ${
-                            permiso.puede_eliminar
+                            permiso.puedeEliminar
                               ? isDark ? 'bg-red-900/50 text-red-300 hover:bg-red-800/50' : 'bg-red-100 text-red-700 hover:bg-red-200'
                               : isDark ? 'bg-gray-700 text-gray-500 hover:bg-gray-600' : 'bg-gray-100 text-gray-400 hover:bg-gray-200'
                           } ${!canEdit ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}`}
                         >
-                          {permiso.puede_eliminar ? '✅' : '❌'}
+                          {permiso.puedeEliminar ? '✅' : '❌'}
                         </button>
                       </td>
                     </tr>

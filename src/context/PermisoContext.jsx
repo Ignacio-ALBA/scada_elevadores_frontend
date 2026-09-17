@@ -204,7 +204,7 @@ export const PermisoProvider = ({ children }) => {
       }
       
       if (!permisosCargados) {
-        console.warn('⚠️ [PermisoContext] Usando fallback SuperAdmin');
+        // Usando fallback SuperAdmin
         modulos = PERMISOS_POR_ROL[1];
       }
       
