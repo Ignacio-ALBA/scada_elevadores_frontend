@@ -176,7 +176,8 @@ const Dashboard = () => {
       setLoading(prev => ({ ...prev, elevadores: true }));
     }
     try {
-      const data = await elevadorService.getAll({ activo: true });
+      const response = await elevadorService.getAll({ activo: true });
+      const data = response.data || [];
       const porEstado = {};
       data.forEach(e => {
         const estado = e.estado_operativo || 'desconocido';
@@ -225,7 +226,8 @@ const Dashboard = () => {
       setLoading(prev => ({ ...prev, edificios: true }));
     }
     try {
-      const data = await edificioService.getAll({ activo: true });
+      const response = await edificioService.getAll({ activo: true });
+      const data = response.data || [];
       updateStats({ edificios: { total: data.length } });
     } catch (error) {
       console.error('Error cargando edificios:', error);
@@ -369,28 +371,43 @@ const Dashboard = () => {
       
       // Contar eventos por día
       (eventosData || []).forEach(e => {
-        const fecha = new Date(e.fecha_hora || e.created_at);
-        const key = fecha.toISOString().split('T')[0];
-        if (diasMap[key]) {
-          diasMap[key].eventos++;
+        const fechaStr = e.fecha_hora || e.created_at;
+        if (fechaStr) {
+          const fecha = new Date(fechaStr);
+          if (!isNaN(fecha.getTime())) {
+            const key = fecha.toISOString().split('T')[0];
+            if (diasMap[key]) {
+              diasMap[key].eventos++;
+            }
+          }
         }
       });
       
       // Contar alarmas por día
       (alarmasData || []).forEach(a => {
-        const fecha = new Date(a.timestamp || a.created_at);
-        const key = fecha.toISOString().split('T')[0];
-        if (diasMap[key]) {
-          diasMap[key].alarmas++;
+        const fechaStr = a.timestamp || a.created_at;
+        if (fechaStr) {
+          const fecha = new Date(fechaStr);
+          if (!isNaN(fecha.getTime())) {
+            const key = fecha.toISOString().split('T')[0];
+            if (diasMap[key]) {
+              diasMap[key].alarmas++;
+            }
+          }
         }
       });
       
       // Contar mantenimientos por día -  Usar mantenimientosData
       (mantenimientosData || []).forEach(m => {
-        const fecha = new Date(m.fecha_programada || m.fecha_registro || m.created_at);
-        const key = fecha.toISOString().split('T')[0];
-        if (diasMap[key]) {
-          diasMap[key].mantenimientos++;
+        const fechaStr = m.fecha_programada || m.fecha_registro || m.created_at;
+        if (fechaStr) {
+          const fecha = new Date(fechaStr);
+          if (!isNaN(fecha.getTime())) {
+            const key = fecha.toISOString().split('T')[0];
+            if (diasMap[key]) {
+              diasMap[key].mantenimientos++;
+            }
+          }
         }
       });
       
