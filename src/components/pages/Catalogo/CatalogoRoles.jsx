@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../../services/api';
 import { useNombreInterfaz } from '../../../hooks/useNombreInterfaz';
+import { useSafeTheme } from '../../../hooks/useSafeTheme';
 import SearchBar from '../../common/SearchBar';
 import DataTable from '../../common/DataTable';
 
@@ -17,15 +18,15 @@ const CatalogoRoles = ({ canEdit }) => {
   const [estadoAccion, setEstadoAccion] = useState('');
   const [formData, setFormData] = useState({
     nombre: '',
-    nivel_jerarquia: 999,
+    nivelJerarquia: 999,
     descripcion: '',
   });
   const [message, setMessage] = useState(null);
   const pageTitle = useNombreInterfaz('roles');
-
-  // ✅ Obtener el tema para estilos dinámicos
-  const temaLocal = localStorage.getItem('tema_actual') || 'default';
-  const isDark = temaLocal === 'oscuro';
+  
+  // ✅ Obtener valores del contexto de tema
+  const { temaActual } = useSafeTheme();
+  const isDark = temaActual === 'oscuro';
 
   useEffect(() => {
     cargarDatos();
@@ -39,7 +40,7 @@ const CatalogoRoles = ({ canEdit }) => {
     setLoading(true);
     try {
       const response = await api.get('/roles/');
-      setData(response.data.data || []);
+      setData(response.data.data.data || []);
     } catch (error) {
       console.error('Error cargando roles:', error);
       setMessage({ type: 'error', text: 'Error al cargar los roles' });
@@ -73,35 +74,24 @@ const CatalogoRoles = ({ canEdit }) => {
     setEditingItem(null);
     setFormData({
       nombre: '',
-      nivel_jerarquia: 999,
+      nivelJerarquia: 999,
       descripcion: '',
     });
     setShowModal(true);
   };
 
   const handleEdit = (item) => {
-    if (item.estado === 'eliminado') {
-      setMessage({ type: 'error', text: 'No se puede editar un rol eliminado' });
-      setTimeout(() => setMessage(null), 5000);
-      return;
-    }
     setEditingItem(item);
     setFormData({
       nombre: item.nombre || '',
-      nivel_jerarquia: item.nivel_jerarquia || 999,
+      nivelJerarquia: item.nivelJerarquia || 999,
       descripcion: item.descripcion || '',
     });
     setShowModal(true);
   };
 
   const openEstadoModal = (item, accion) => {
-    if (item.estado === 'eliminado') {
-      setMessage({ type: 'error', text: 'No se puede cambiar el estado de un rol eliminado' });
-      setTimeout(() => setMessage(null), 5000);
-      return;
-    }
-    
-    const id = item.id_rol || item.id;
+    const id = item.idRol || item.id;
     if (!id) {
       setMessage({ type: 'error', text: 'Error: ID del rol no encontrado' });
       setTimeout(() => setMessage(null), 5000);
@@ -114,7 +104,7 @@ const CatalogoRoles = ({ canEdit }) => {
   };
 
   const handleCambiarEstado = async () => {
-    const id = estadoTarget?.id || estadoTarget?.id_rol;
+    const id = estadoTarget?.id || estadoTarget?.idRol;
     if (!id) {
       setMessage({ type: 'error', text: 'Error: ID del rol no encontrado' });
       setShowEstadoModal(false);
@@ -161,7 +151,7 @@ const CatalogoRoles = ({ canEdit }) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
-      [name]: name === 'nivel_jerarquia' ? parseInt(value) || 999 : value,
+      [name]: name === 'nivelJerarquia' ? parseInt(value) || 999 : value,
     });
   };
 
@@ -176,7 +166,7 @@ const CatalogoRoles = ({ canEdit }) => {
 
     try {
       if (editingItem) {
-        await api.put(`/roles/${editingItem.id_rol || editingItem.id}`, formData);
+        await api.put(`/roles/${editingItem.idRol || editingItem.id}`, formData);
         setMessage({ type: 'success', text: 'Rol actualizado correctamente' });
       } else {
         await api.post('/roles/', formData);
@@ -192,67 +182,42 @@ const CatalogoRoles = ({ canEdit }) => {
     setTimeout(() => setMessage(null), 5000);
   };
 
-  const estadoColors = {
-    activo: 'bg-green-100 text-green-800',
-    inactivo: 'bg-yellow-100 text-yellow-800',
-    eliminado: 'bg-red-100 text-red-800',
-  };
-
-  const estadoLabels = {
-    activo: 'Activo',
-    inactivo: 'Inactivo',
-    eliminado: 'Eliminado',
-  };
-
   const columns = [
     { key: 'nombre', label: 'Nombre' },
-    { key: 'nivel_jerarquia', label: 'Nivel' },
+    { key: 'nivelJerarquia', label: 'Nivel' },
     { key: 'descripcion', label: 'Descripción' },
     { 
-      key: 'estado', 
+      key: 'activo', 
       label: 'Estado',
       render: (item) => (
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${estadoColors[item.estado] || 'bg-gray-100'}`}>
-          {estadoLabels[item.estado] || item.estado}
+        <span className={`px-2 py-1 rounded-full text-xs font-medium ${item.activo ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+          {item.activo ? 'Activo' : 'Inactivo'}
         </span>
       )
     },
   ];
 
   const accionesDisponibles = (item) => {
-    if (item.estado === 'eliminado') return [];
-    if (item.estado === 'activo') {
-      return [
-        { label: 'Desactivar', accion: 'inactivo', color: 'text-yellow-600 hover:bg-yellow-50' },
-        { label: 'Eliminar', accion: 'eliminado', color: 'text-red-600 hover:bg-red-50' },
-      ];
-    }
-    if (item.estado === 'inactivo') {
-      return [
-        { label: 'Activar', accion: 'activo', color: 'text-green-600 hover:bg-green-50' },
-        { label: 'Eliminar', accion: 'eliminado', color: 'text-red-600 hover:bg-red-50' },
-      ];
-    }
-    return [];
+    return item.activo 
+      ? [{ label: 'Desactivar', accion: 'inactivo', color: 'text-yellow-600 hover:bg-yellow-50' }]
+      : [{ label: 'Activar', accion: 'activo', color: 'text-green-600 hover:bg-green-50' }];
   };
 
   // ✅ Botones de acción con estilos dinámicos
   const renderActions = (item) => {
-    const itemId = item.id_rol || item.id;
+    const itemId = item.idRol || item.id;
     const actions = [];
     
-    if (item.estado !== 'eliminado') {
-      actions.push(
-        <button
-          key="edit"
-          onClick={() => handleEdit(item)}
-          className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-blue-400 hover:bg-gray-600' : 'text-blue-600 hover:bg-blue-50'}`}
-          title="Editar"
-        >
-          ✏️
-        </button>
-      );
-    }
+    actions.push(
+      <button
+        key="edit"
+        onClick={() => handleEdit(item)}
+        className={`p-1.5 rounded-lg transition-colors ${isDark ? 'text-blue-400 hover:bg-gray-600' : 'text-blue-600 hover:bg-blue-50'}`}
+        title="Editar"
+      >
+        ✏️
+      </button>
+    );
     
     accionesDisponibles(item).forEach((acc) => {
       actions.push(
@@ -354,7 +319,7 @@ const CatalogoRoles = ({ canEdit }) => {
                 </tr>
               ) : (
                 filteredData.map((item) => (
-                  <tr key={item.id_rol || item.id} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
+                  <tr key={item.idRol || item.id} className={isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-50'}>
                     {columns.map((col) => (
                       <td key={col.key} className={`px-4 py-3 text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
                         {col.render ? col.render(item) : item[col.key] || '-'}
@@ -412,8 +377,8 @@ const CatalogoRoles = ({ canEdit }) => {
                   </label>
                   <input
                     type="number"
-                    name="nivel_jerarquia"
-                    value={formData.nivel_jerarquia}
+                    name="nivelJerarquia"
+                    value={formData.nivelJerarquia}
                     onChange={handleInputChange}
                     min="1"
                     className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 ${
@@ -476,12 +441,12 @@ const CatalogoRoles = ({ canEdit }) => {
               ¿Estás seguro de cambiar el rol <strong>{estadoTarget.nombre}</strong>?
             </p>
             <p className={`text-sm mb-4 ${isDark ? 'text-gray-400' : 'text-text-muted'}`}>
-              Estado actual: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoColors[estadoTarget.estado]}`}>
-                {estadoLabels[estadoTarget.estado]}
+              Estado actual: <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoTarget.activo ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                {estadoTarget.activo ? 'Activo' : 'Inactivo'}
               </span>
               {' → '}
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoColors[estadoAccion]}`}>
-                {estadoLabels[estadoAccion]}
+              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${estadoAccion === 'activo' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                {estadoAccion === 'activo' ? 'Activo' : 'Inactivo'}
               </span>
             </p>
             <div className="flex justify-end gap-3">
